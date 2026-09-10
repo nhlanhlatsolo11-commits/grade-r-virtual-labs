@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Grade R Virtual Labs</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#4A90E2" />
+  <meta name="description" content="Interactive STEM learning platform for South African Grade R students - Virtual labs for science, math, and creative play" />
+  <style>
+    * { box-sizing: border-box; font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif; user-select: none; }
+    body { margin: 0; padding: 0; background-color: #f0f8ff; color: #333; }
+    header { background-color: #ff6f61; color: white; text-align: center; padding: 15px; font-size: 1.5rem; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .container { padding: 20px; max-width: 1000px; margin: 0 auto; }
+    
+    /* Grid Dashboard */
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+    .card { background: white; border-radius: 15px; padding: 20px; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s; border: 3px solid #ffcc00; }
+    .card:active { transform: scale(0.95); }
+    .card-icon { font-size: 3rem; margin-bottom: 10px; }
+    .card-title { font-size: 1.1rem; font-weight: bold; color: #2c3e50; }
+
+    /* Simulation Modal Frame */
+    .sim-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 100; flex-direction: column; }
+    .sim-header { background: #4A90E2; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+    .back-btn { background: #ff4757; color: white; border: none; padding: 10px 20px; font-size: 1rem; border-radius: 10px; cursor: pointer; font-weight: bold; }
+    .sim-body { flex: 1; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow-y: auto; }
+
+    /* Interactive Game Styles */
+    .water-tank { width: 300px; height: 200px; border: 4px solid #2980b9; border-top: none; background: linear-gradient(to bottom, #81d4fa 20%, #0288d1 100%); position: relative; border-radius: 0 0 15px 15px; margin: 20px; }
+    .tank-item { font-size: 2.5rem; position: absolute; transition: top 1s ease-in-out; cursor: pointer; }
+    .palette { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+    .color-btn { width: 60px; height: 60px; border-radius: 50%; border: 3px solid #333; cursor: pointer; }
+    .canvas-pot { width: 180px; height: 180px; border-radius: 50%; border: 4px solid #333; background-color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold; text-align: center; }
+    .plant-stage { font-size: 6rem; margin: 20px; transition: all 0.5s; }
+    .action-btn { background: #2ed573; color: white; border: none; padding: 12px 25px; font-size: 1.2rem; border-radius: 10px; margin: 5px; cursor: pointer; }
+    .action-btn:active { transform: scale(0.95); }
+
+    /* Pattern Game Styles */
+    .pattern-grid { display: grid; grid-template-columns: repeat(4, 80px); gap: 10px; margin: 20px; }
+    .pattern-item { width: 80px; height: 80px; border: 3px solid #333; border-radius: 10px; font-size: 2rem; display: flex; align-items: center; justify-content: center; cursor: pointer; background: white; }
+    .pattern-item:active { transform: scale(0.9); }
+
+    /* Number Garden */
+    .number-display { font-size: 4rem; font-weight: bold; color: #e74c3c; margin: 20px; }
+    .flower-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin: 10px; }
+    .flower { font-size: 2.5rem; cursor: pointer; }
+
+    /* Animal Feed */
+    .animals-container { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+    .animal-card { background: #fff9e6; border: 3px solid #333; border-radius: 10px; padding: 15px; text-align: center; cursor: pointer; }
+    .animal-icon { font-size: 3rem; }
+    .animal-name { font-weight: bold; margin: 10px 0; }
+    .food-options { display: flex; gap: 10px; margin-top: 10px; }
+    .food-btn { padding: 8px 12px; background: #f39c12; color: white; border: none; border-radius: 5px; cursor: pointer; }
+
+    /* Weather Dress-Up */
+    .dress-container { display: flex; gap: 20px; }
+    .character { font-size: 5rem; text-align: center; }
+    .clothes-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .clothing-btn { padding: 12px; background: #9b59b6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+    /* Sound Game */
+    .sound-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-width: 400px; }
+    .sound-btn { padding: 20px; background: #3498db; color: white; border: none; border-radius: 10px; font-size: 1.2rem; cursor: pointer; }
+    .sound-btn:active { transform: scale(0.95); }
+
+    /* Building Game */
+    .building-canvas { width: 400px; height: 300px; border: 3px dashed #34495e; border-radius: 10px; background: linear-gradient(to bottom, #87ceeb 0%, #deb887 70%); margin: 20px; position: relative; }
+    .building-block { width: 60px; height: 60px; background: #e74c3c; border: 2px solid #c0392b; margin: 5px; cursor: grab; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; }
+    .building-materials { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin: 20px; }
+
+    /* Category Sort */
+    .sort-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 600px; }
+    .category-box { border: 4px dashed #2c3e50; border-radius: 10px; padding: 20px; min-height: 150px; background: #ecf0f1; }
+    .category-title { font-weight: bold; font-size: 1.1rem; margin-bottom: 10px; }
+    .draggable-item { background: white; border: 2px solid #333; padding: 10px; margin: 5px; border-radius: 8px; cursor: grab; display: inline-block; }
+
+    /* Light & Shadow */
+    .light-setup { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+    .shadow-object { font-size: 4rem; }
+    .light-control { display: flex; gap: 10px; }
+    .light-toggle { padding: 10px 20px; background: #f39c12; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+    /* Roll Slide Stay */
+    .ramp-section { display: flex; flex-direction: column; gap: 15px; }
+    .ramp-visual { width: 300px; height: 150px; border: 3px solid #34495e; background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%); border-radius: 10px; margin: 10px 0; }
+    .object-selector { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    .object-option { padding: 10px 15px; background: #3498db; color: white; border: none; border-radius: 8px; cursor: pointer; }
+
+    @media (max-width: 600px) {
+      .pattern-grid { grid-template-columns: repeat(3, 60px); }
+      .building-canvas { width: 90vw; height: 200px; }
+      header { font-size: 1.2rem; padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>🇿🇦 South African Grade R Virtual Labs</header>
+
+  <div class="container">
+    <div class="grid" id="dashboard">
+      <!-- 12 Modules from screenshot -->
+      <div class="card" onclick="openSim('sink-float')"><div class="card-icon">🌊</div><div class="card-title">Sink or Float?</div></div>
+      <div class="card" onclick="openSim('roll-slide')"><div class="card-icon">🛝</div><div class="card-title">Roll, Slide or Stay?</div></div>
+      <div class="card" onclick="openSim('grow-plant')"><div class="card-icon">🌱</div><div class="card-title">Grow My Plant</div></div>
+      <div class="card" onclick="openSim('light-shadow')"><div class="card-icon">🔦</div><div class="card-title">Light & Shadow Play</div></div>
+      <div class="card" onclick="openSim('make-pattern')"><div class="card-icon">📿</div><div class="card-title">Make a Pattern</div></div>
+      <div class="card" onclick="openSim('feed-animals')"><div class="card-icon">🦁</div><div class="card-title">Feed the Animals</div></div>
+      <div class="card" onclick="openSim('number-garden')"><div class="card-icon">🌻</div><div class="card-title">Build a Number Garden</div></div>
+      <div class="card" onclick="openSim('weather-dress')"><div class="card-icon">🌤️</div><div class="card-title">Weather Dress-Up</div></div>
+      <div class="card" onclick="openSim('loud-soft')"><div class="card-icon">🥁</div><div class="card-title">Loud, Soft, Fast & Slow</div></div>
+      <div class="card" onclick="openSim('build-bridge')"><div class="card-icon">🌉</div><div class="card-title">Build a Home or Bridge</div></div>
+      <div class="card" onclick="openSim('mix-colours')"><div class="card-icon">🎨</div><div class="card-title">Mix the Colours</div></div>
+      <div class="card" onclick="openSim('where-belong')"><div class="card-icon">🧺</div><div class="card-title">Where Does It Belong?</div></div>
+    </div>
+  </div>
+
+  <!-- Fullscreen Simulation Modal -->
+  <div class="sim-modal" id="simModal">
+    <div class="sim-header">
+      <h2 id="simTitle" style="margin:0;">Lab Title</h2>
+      <button class="back-btn" onclick="closeSim()">Back to Menu</button>
+    </div>
+    <div class="sim-body" id="simBody"></div>
+  </div>
+
+  <script>
+    // Register Service Worker for offline PWA functionality
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js')
+        .then(() => console.log('✅ PWA Service Worker Registered!'))
+        .catch((err) => console.log('Service Worker registration failed:', err));
+    }
+
+    // Modal Control Functions
+    function openSim(simId) {
+      const modal = document.getElementById('simModal');
+      const title = document.getElementById('simTitle');
+      const body = document.getElementById('simBody');
+      modal.style.display = 'flex';
+
+      if (simId === 'sink-float') {
+        title.innerText = "What Will Sink or Float?";
+        body.innerHTML = `
+          <p style="font-size:1.2rem; text-align:center;">Tap an object to drop it in the water!</p>
+          <div style="display:flex; gap:15px; margin-bottom:10px; flex-wrap: wrap; justify-content: center;">
+            <button class="action-btn" onclick="dropItem('🪨', 'sink')">Stone 🪨</button>
+            <button class="action-btn" onclick="dropItem('🍃', 'float')">Leaf 🍃</button>
+            <button class="action-btn" onclick="dropItem('🪙', 'sink')">Coin 🪙</button>
+            <button class="action-btn" onclick="dropItem('🦆', 'float')">Duck 🦆</button>
+          </div>
+          <div class="water-tank" id="tank">
+            <div id="activeItem" class="tank-item" style="top: -50px; left: 125px; display:none;"></div>
+          </div>
+          <h3 id="sinkResult" style="height:30px; color:#0288d1;"></h3>
+        `;
+      } 
+      else if (simId === 'mix-colours') {
+        title.innerText = "Mix the Colours";
+        body.innerHTML = `
+          <p style="font-size:1.2rem;">Tap two colours to mix them together!</p>
+          <div class="palette">
+            <div class="color-btn" style="background:red;" onclick="selectColor('red')"></div>
+            <div class="color-btn" style="background:yellow;" onclick="selectColor('yellow')"></div>
+            <div class="color-btn" style="background:blue;" onclick="selectColor('blue')"></div>
+          </div>
+          <div class="canvas-pot" id="paintPot">Empty Pot</div>
+          <br>
+          <button class="action-btn" style="background:#ff4757;" onclick="resetColor()">Clear Pot</button>
+        `;
+        selectedColors = [];
+      }
+      else if (simId === 'grow-plant') {
+        title.innerText = "Grow My Plant";
+        body.innerHTML = `
+          <p style="font-size:1.2rem;">Give the seed water and sun to help it grow!</p>
+          <div class="plant-stage" id="plantEmoji">🫘</div>
+          <div id="plantStatus" style="font-size:1.2rem; font-weight:bold; margin-bottom:15px;">Stage: Seed</div>
+          <div>
+            <button class="action-btn" onclick="feedPlant('water')">Add Water 💧</button>
+            <button class="action-btn" onclick="feedPlant('sun')">Add Sun ☀️</button>
+          </div>
+        `;
+        plantProgress = 0;
+      }
+      else if (simId === 'make-pattern') {
+        title.innerText = "Make a Pattern";
+        body.innerHTML = `
+          <p style="font-size:1.2rem;">Create a beautiful pattern by choosing symbols!</p>
+          <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap: wrap; justify-content: center;">
+            <button class="action-btn" onclick="addPatternItem('⭐')">Star ⭐</button>
+            <button class="action-btn" onclick="addPatternItem('🔴')">Circle 🔴</button>
+            <button class="action-btn" onclick="addPatternItem('🟩')">Square 🟩</button>
+            <button class="action-btn" onclick="addPatternItem('❤️')">Heart ❤️</button>
+          </div>
+          <div class="pattern-grid" id="patternGrid"></div>
+          <button class="action-btn" style="background:#ff4757;" onclick="clearPattern()">Clear Pattern</button>
+        `;
+        patternArray = [];
+      }
+      else if (simId === 'feed-animals') {
+        title.innerText = "Feed the Animals";
+        body.innerHTML = `
+          <p style="font-size:1.2rem;">What do these animals like to eat?</p>
+          <div class="animals-container">
+            <div class="animal-card">
+              <div class="animal-icon">🦁</div>
+              <div class="animal-name">Lion</div>
+              <div class="food-options">
+                <button class="food-btn" onclick="feedAnimal('🦁', '🥩')">🥩</button>
+                <button class="food-btn" onclick="feedAnimal('🦁', '🌾')">🌾</button>
+              </div>
+            </div>
+            <div class="animal-card">
+              <div class="animal-icon">🐄</div>
+              <div class="animal-name">Cow</div>
+              <div class="food-options">
+                <button class="food-btn" onclick="feedAnimal('🐄', '🌾')">🌾</button>
+                <button class="food-btn" onclick="feedAnimal('🐄', '🥩')">🥩</button>
+              </div>
+            </div>
+            <div class="animal-card">
+              <div class="animal-icon">🦜</div>
+              <div class="animal-name">Parrot</div>
+              <div class="food-options">
+                <button class="food-btn" onclick="feedAnimal('🦜', '🍎')">🍎</button>
+                <button class="food-btn" onclick="feedAnimal('🦜', '🥩')">🥩</button>
+              </div>
+            </div>
+          </div>
+          <div id="feedResult" style="font-size:1.5rem; margin-top:20px; text-align:center;"></div>
+        `;
+      }
+      else if (simId === 'number-garden') {
+        title.innerText = "Build a Number Garden";
+        body.innerHTML = `
+          <p style="font-size:1.2rem;">Click flowers to count up to 10!</p>
+          <div class="number-display" id="numberDisplay">0</div>
+          <div class="flower-row" id="flowerRow"></div>
+          <button class="action-btn" style="background:#ff4757;" onclick="resetNumber()">Reset</button>
+        `;
+        numberCount = 0;
+        renderFlowers();
+      }
+      else if (simId === 'weather-dress') {
+        title.innerText = "Weather Dress-Up";
+        body.innerHTML = `
+          <p style="font-size:1.2rem;">Pick clothes for different weather!</p>
+          <div class="dress-container" style="flex-direction: column; align-items: center;">
+            <div class="character" id="character">🧒</div>
+            <div class="clothes-options">
+              <button class="clothing-btn" onclick="dressCharacter('☀️ Sunny')">☀️ Sunhat</button>
+              <button class="clothing-btn" onclick="dressCharacter('🌧️ Rainy')">🌧️ Raincoat</button>
+              <button class="clothing-btn" onclick="dressCharacter('❄️ Cold')">❄️ Scarf</button>
+              <button class="clothing-btn" onclick="dressCharacter('👕 Normal')">👕 T-Shirt</button>
+            </div>
+          </div>
+          <div id="weatherResult" style="font-size:1.3rem; margin-top:20px; text-align:center;"></div>
+        `;
+      }
+      else if (simId === 'loud-soft') {
+        title.innerText = "Loud, Soft, Fast & Slow";
+        body.innerHTML = `
+          <p style="font-size:1.2rem;">Make different sounds!</p>
+          <div class="sound-grid">
+            <button class="sound-btn" onclick="playSound('LOUD 🔊')">LOUD 🔊</button>
+            <button class="sound-btn" onclick="playSound('Soft 🤫')">Soft 🤫</button>
+            <button class="sound-btn" onclick="playSound('FAST ⚡')">FAST ⚡</button>
+            <button class="sound-btn" onclick="playSound('Slow 🐌')">Slow 🐌</button>
+          </div>
+          <div id="soundResult" style="font-size:1.5rem; margin-top:30px;"></div>
+        `;
+      }
+      else if (simId === 'build-bridge') {
+        title.innerText = "Build a Home or Bridge";
+        body.innerHTML = `
+          <p style="font-size:1.2rem;">Drag blocks to create structures!</p>
+          <div class="building-canvas" id="buildingCanvas"></div>
+          <div class="building-materials">
+            <div class="building-block" draggable="true" ondragstart="dragBlock(event)">🧱</div>
+            <div class="building-block" draggable="true" ondragstart="dragBlock(event)">🪵</div>
+            <div class="building-block" draggable="true" ondragstart="dragBlock(event)">🪨</div>
+          </div>
+          <button class="action-btn" style="background:#ff4757;" onclick="clearBuilding()">Clear</button>
+        `;
+      }
+      else if (simId === 'light-shadow') {
+        title.innerText = "Light & Shadow Play";
+        body.innerHTML = `
+          <p style="font-size:1.2rem;">Turn the light on and off to see shadows!</p>
+          <div class="light-setup">
+            <div class="shadow-object" id="shadowObj">🌳</div>
+            <div id="shadowDisplay" style="font-size:1.5rem; color:#666;">Shadow Off</div>
+            <div class="light-control">
+              <button class="light-toggle" onclick="toggleLight(true)">💡 Light ON</button>
+              <button class="light-toggle" style="background:#555;" onclick="toggleLight(false)">🌙 Light OFF</button>
+            </div>
+          </div>
+        `;
+      }
+      else if (simId === 'roll-slide') {
+        title.innerText = "Roll, Slide or Stay?";
+        body.innerHTML = `
+          <p style="font-size:1.2rem;">Pick an object and see what happens on the ramp!</p>
+          <div class="ramp-section">
+            <div class="object-selector">
+              <button class="object-option" onclick="testObject('Ball ⚽', 'roll')">Ball ⚽</button>
+              <button class="object-option" onclick="testObject('Box 📦', 'slide')">Box 📦</button>
+              <button class="object-option" onclick="testObject('Cup 🥤', 'stay')">Cup 🥤</button>
+            </div>
+            <div class="ramp-visual" id="rampCanvas"></div>
+            <div id="rampResult" style="font-size:1.2rem; text-align:center; font-weight:bold;"></div>
+          </div>
+        `;
+      }
+      else if (simId === 'where-belong') {
+        title.innerText = "Where Does It Belong?";
+        body.innerHTML = `
+          <p style="font-size:1.2rem;">Sort items into categories!</p>
+          <div class="sort-container">
+            <div class="category-box">
+              <div class="category-title">🍎 FOOD</div>
+              <div id="foodBox" style="min-height:100px;"></div>
+            </div>
+            <div class="category-box">
+              <div class="category-title">🧸 TOYS</div>
+              <div id="toyBox" style="min-height:100px;"></div>
+            </div>
+          </div>
+          <div style="margin-top:20px; text-align:center;">
+            <button class="action-btn" onclick="renderSortItems()">Reset Items</button>
+          </div>
+          <div id="itemsToSort" style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:20px;"></div>
+        `;
+        renderSortItems();
+      }
+    }
+
+    function closeSim() {
+      document.getElementById('simModal').style.display = 'none';
+    }
+
+    // --- Interactive Simulation Logic ---
+
+    // 1. Sink or Float Logic
+    function dropItem(emoji, physics) {
+      const item = document.getElementById('activeItem');
+      const resultText = document.getElementById('sinkResult');
+      item.innerText = emoji;
+      item.style.display = 'block';
+      item.style.top = '-50px';
+      resultText.innerText = '';
+
+      setTimeout(() => {
+        if (physics === 'sink') {
+          item.style.top = '140px';
+          setTimeout(() => { resultText.innerText = "It SANK to the bottom! 🪨"; }, 1000);
+        } else {
+          item.style.top = '10px';
+          setTimeout(() => { resultText.innerText = "It FLOATS on top! 🍃"; }, 1000);
+        }
+      }, 100);
+    }
+
+    // 2. Mix the Colours Logic
+    let selectedColors = [];
+    function selectColor(color) {
+      if (selectedColors.length < 2) {
+        selectedColors.push(color);
+      }
+      const pot = document.getElementById('paintPot');
+      if (selectedColors.length === 1) {
+        pot.style.backgroundColor = selectedColors[0];
+        pot.style.color = '#fff';
+        pot.innerText = selectedColors[0].toUpperCase();
+      } else if (selectedColors.length === 2) {
+        const mix = selectedColors.sort().join('+');
+        let finalColor = '#fff';
+        let name = '';
+
+        if (mix === 'red+yellow') { finalColor = 'orange'; name = 'ORANGE 🍊'; }
+        else if (mix === 'blue+yellow') { finalColor = 'green'; name = 'GREEN 🌿'; }
+        else if (mix === 'blue+red') { finalColor = 'purple'; name = 'PURPLE 🍇'; }
+        else { finalColor = selectedColors[0]; name = selectedColors[0].toUpperCase(); }
+
+        pot.style.backgroundColor = finalColor;
+        pot.innerText = name;
+      }
+    }
+    function resetColor() {
+      selectedColors = [];
+      const pot = document.getElementById('paintPot');
+      pot.style.backgroundColor = '#ffffff';
+      pot.style.color = '#333';
+      pot.innerText = 'Empty Pot';
+    }
+
+    // 3. Grow My Plant Logic
+    let plantProgress = 0;
+    function feedPlant(type) {
+      plantProgress += 1;
+      const emoji = document.getElementById('plantEmoji');
+      const status = document.getElementById('plantStatus');
+
+      if (plantProgress === 1) {
+        emoji.innerText = '🌱';
+        status.innerText = 'Stage: Sprout!';
+      } else if (plantProgress === 2) {
+        emoji.innerText = '🪴';
+        status.innerText = 'Stage: Small Plant!';
+      } else if (plantProgress >= 3) {
+        emoji.innerText = '🌻';
+        status.innerText = 'Stage: Full Sunflower Bloom! 🎉';
+      }
+    }
+
+    // 4. Make Pattern Logic
+    let patternArray = [];
+    function addPatternItem(symbol) {
+      if (patternArray.length < 12) {
+        patternArray.push(symbol);
+        renderPattern();
+      }
+    }
+    function renderPattern() {
+      const grid = document.getElementById('patternGrid');
+      grid.innerHTML = patternArray.map(item => `<div class="pattern-item">${item}</div>`).join('');
+    }
+    function clearPattern() {
+      patternArray = [];
+      document.getElementById('patternGrid').innerHTML = '';
+    }
+
+    // 5. Feed Animals Logic
+    function feedAnimal(animal, food) {
+      const result = document.getElementById('feedResult');
+      const correctFood = {
+        '🦁': '🥩',
+        '🐄': '🌾',
+        '🦜': '🍎'
+      };
+      if (correctFood[animal] === food) {
+        result.innerText = `${animal} is happy! Yum Yum! 😋`;
+      } else {
+        result.innerText = `${animal} doesn't like that! 😕`;
+      }
+    }
+
+    // 6. Number Garden Logic
+    let numberCount = 0;
+    function renderFlowers() {
+      const row = document.getElementById('flowerRow');
+      row.innerHTML = '';
+      for (let i = 0; i < 10; i++) {
+        if (i < numberCount) {
+          row.innerHTML += `<div class="flower" onclick="numberCount > 0 && (numberCount--, updateNumber())">🌻</div>`;
+        } else {
+          row.innerHTML += `<div class="flower" onclick="numberCount < 10 && (numberCount++, updateNumber())">🌼</div>`;
+        }
+      }
+    }
+    function updateNumber() {
+      document.getElementById('numberDisplay').innerText = numberCount;
+      renderFlowers();
+    }
+    function resetNumber() {
+      numberCount = 0;
+      updateNumber();
+    }
+
+    // 7. Weather Dress-Up Logic
+    function dressCharacter(outfit) {
+      const result = document.getElementById('weatherResult');
+      const outfits = {
+        '☀️ Sunny': '🧒☀️👒',
+        '🌧️ Rainy': '🧒🌧️🧥',
+        '❄️ Cold': '🧒❄️🧣',
+        '👕 Normal': '🧒👕'
+      };
+      document.getElementById('character').innerText = outfits[outfit];
+      result.innerText = `Ready for ${outfit}! ✅`;
+    }
+
+    // 8. Sound Game Logic
+    function playSound(sound) {
+      const result = document.getElementById('soundResult');
+      result.innerText = `${sound}`;
+      setTimeout(() => { result.innerText = ''; }, 2000);
+    }
+
+    // 9. Building Game Logic
+    function dragBlock(e) {
+      e.dataTransfer.setData('text', e.target.innerText);
+    }
+    function allowDrop(e) {
+      e.preventDefault();
+    }
+    function dropBlock(e) {
+      e.preventDefault();
+      const canvas = document.getElementById('buildingCanvas');
+      const block = document.createElement('div');
+      block.className = 'building-block';
+      block.innerText = e.dataTransfer.getData('text');
+      block.style.position = 'absolute';
+      block.style.left = (e.clientX - canvas.getBoundingClientRect().left) + 'px';
+      block.style.top = (e.clientY - canvas.getBoundingClientRect().top) + 'px';
+      canvas.appendChild(block);
+    }
+    function clearBuilding() {
+      document.getElementById('buildingCanvas').innerHTML = '';
+    }
+
+    // 10. Light & Shadow Logic
+    function toggleLight(isOn) {
+      const obj = document.getElementById('shadowObj');
+      const display = document.getElementById('shadowDisplay');
+      if (isOn) {
+        obj.style.textShadow = '5px 5px 10px rgba(0,0,0,0.5)';
+        display.innerText = 'Shadow ON - Look at the shadow!';
+      } else {
+        obj.style.textShadow = 'none';
+        display.innerText = 'Shadow OFF - No shadow!';
+      }
+    }
+
+    // 11. Roll Slide Stay Logic
+    function testObject(obj, action) {
+      const canvas = document.getElementById('rampCanvas');
+      const result = document.getElementById('rampResult');
+      canvas.innerHTML = obj;
+      canvas.style.display = 'flex';
+      canvas.style.alignItems = 'center';
+      canvas.style.justifyContent = 'center';
+      
+      if (action === 'roll') {
+        result.innerText = `The ${obj.split(' ')[0]} will ROLL down the ramp! 🔄`;
+      } else if (action === 'slide') {
+        result.innerText = `The ${obj.split(' ')[0]} will SLIDE down the ramp! 📦`;
+      } else {
+        result.innerText = `The ${obj.split(' ')[0]} will STAY at the top! ⛔`;
+      }
+    }
+
+    // 12. Category Sort Logic
+    let sortItems = ['🍎', '🍌', '🧸', '🎲'];
+    function renderSortItems() {
+      const container = document.getElementById('itemsToSort');
+      container.innerHTML = sortItems.map(item => 
+        `<div class="draggable-item" draggable="true" ondragstart="dragSortItem(event)" ondragend="dropSortItem(event)" data-item="${item}">${item}</div>`
+      ).join('');
+    }
+    function dragSortItem(e) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('item', e.target.dataset.item);
+    }
+    function dropSortItem(e) {
+      e.preventDefault();
+    }
+
+    // Setup drop zones
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('simBody').addEventListener('dragover', e => e.preventDefault());
+      document.getElementById('simBody').addEventListener('drop', e => {
+        e.preventDefault();
+        const item = e.dataTransfer.getData('item');
+        if (item) {
+          let target;
+          if (e.target.id === 'foodBox' || e.target.closest('#foodBox')) {
+            target = document.getElementById('foodBox');
+          } else if (e.target.id === 'toyBox' || e.target.closest('#toyBox')) {
+            target = document.getElementById('toyBox');
+          }
+          if (target) {
+            target.innerHTML += `<div class="draggable-item">${item}</div>`;
+            e.dataTransfer.setData('item', '');
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
