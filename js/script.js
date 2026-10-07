@@ -54,6 +54,31 @@ function playSuccessCue() {
     setTimeout(() => playTone(659.25, 0.12, 'triangle', 0.08), 110);
 }
 
+function unlockAudioOnFirstGesture() {
+    function initOnce() {
+        try {
+            ensureAudioContext();
+            playTone(880, 0.06, 'sine', 0.06);
+            if ('speechSynthesis' in window) {
+                const u = new SpeechSynthesisUtterance('Sound ready!');
+                u.lang = 'en-ZA';
+                u.volume = 0.9;
+                speechSynthesis.cancel();
+                speechSynthesis.speak(u);
+            }
+        } catch (e) {
+            console.log('Audio/TTS unlock error', e);
+        }
+        document.removeEventListener('pointerdown', initOnce);
+        document.removeEventListener('touchstart', initOnce);
+        document.removeEventListener('keydown', initOnce);
+    }
+
+    document.addEventListener('pointerdown', initOnce, { once: true });
+    document.addEventListener('touchstart', initOnce, { once: true });
+    document.addEventListener('keydown', initOnce, { once: true });
+}
+
 function playBackgroundRhyme() {
     const ctx = ensureAudioContext();
     if (!ctx) return;
@@ -218,7 +243,6 @@ function requestMicConsentFlow() {
         gradeRApp.micConsent = true;
         hideConsentModal();
         setHelperText('Mic permission granted. Tap Voice helper to start listening.');
-        // Note: do not start recognition automatically; user must press Voice helper
         try {
             await navigator.mediaDevices.getUserMedia({ audio: true });
         } catch (err) {
@@ -238,6 +262,8 @@ function initializeInteractiveHub() {
     const voiceToggle = document.getElementById('voiceToggle');
     const speakDemo = document.getElementById('speakDemo');
     const downloadZip = document.getElementById('downloadZip');
+
+    unlockAudioOnFirstGesture();
 
     if (musicToggle) {
         musicToggle.addEventListener('click', () => {
@@ -289,7 +315,6 @@ function initializeInteractiveHub() {
 
     if (downloadZip) {
         downloadZip.addEventListener('click', () => {
-            // Link to the branch zip (current feature branch)
             const zipUrl = 'https://github.com/nhlanhlatsolo11-commits/grade-r-virtual-labs/archive/refs/heads/feature/interactive-launch-ready.zip';
             window.open(zipUrl, '_blank');
         });
