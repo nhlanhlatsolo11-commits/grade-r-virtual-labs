@@ -155,4 +155,163 @@ window.activities['number-game'] = function() {
             if (value === target) {
                 button.classList.add('correct');
                 button.textContent = '✓';
-                setHelper
+                setHelperText('Great job! You found the number!');
+            } else {
+                button.classList.add('wrong');
+                setTimeout(() => button.classList.remove('wrong'), 250);
+            }
+        });
+    });
+};
+
+window.activities['shape-sorter'] = function() {
+    const content = document.getElementById('activityContent');
+    content.innerHTML = `
+        <div class="shape-sorter">
+            <h2>⬜ Shape Sorter</h2>
+            <p>Tap the matching shapes and enjoy the pattern.</p>
+            <div class="shape-row">
+                <button class="shape-item circle" type="button">◯</button>
+                <button class="shape-item square" type="button">◼</button>
+                <button class="shape-item triangle" type="button">△</button>
+                <button class="shape-item star" type="button">★</button>
+            </div>
+        </div>
+    `;
+
+    document.querySelectorAll('.shape-item').forEach(button => {
+        button.addEventListener('click', () => {
+            button.classList.add('selected-shape');
+            setTimeout(() => button.classList.remove('selected-shape'), 200);
+            setHelperText('Nice shape choice!');
+        });
+    });
+};
+
+window.activities['counting-game'] = function() {
+    const content = document.getElementById('activityContent');
+    const total = 5;
+    content.innerHTML = `
+        <div class="counting-game">
+            <h2>🍎 Counting Game</h2>
+            <p>Tap the apples to count them: <strong>${total}</strong></p>
+            <div class="apple-row" id="appleRow"></div>
+        </div>
+    `;
+
+    const row = document.getElementById('appleRow');
+
+    for (let i = 0; i < total; i++) {
+        const apple = document.createElement('button');
+        apple.type = 'button';
+        apple.className = 'apple-item';
+        apple.textContent = '🍏';
+        apple.addEventListener('click', () => {
+            apple.classList.add('picked');
+            setHelperText('Counted one more apple!');
+            setTimeout(() => apple.classList.remove('picked'), 180);
+        });
+        row.appendChild(apple);
+    }
+};
+
+window.activities['color-mixer'] = function() {
+    const content = document.getElementById('activityContent');
+    content.innerHTML = `
+        <div class="color-mixer">
+            <h2>🎨 Color Mixer</h2>
+            <p>Tap the colors to mix a joyful new shade.</p>
+            <div class="mix-row">
+                <button class="mix-color red" type="button" data-color="#ff5d8f">Red</button>
+                <button class="mix-color yellow" type="button" data-color="#ffd166">Yellow</button>
+                <button class="mix-color blue" type="button" data-color="#5ec8ff">Blue</button>
+            </div>
+            <div id="mixResult" class="mix-result">Mix colors here!</div>
+        </div>
+    `;
+
+    const result = document.getElementById('mixResult');
+
+    document.querySelectorAll('.mix-color').forEach(button => {
+        button.addEventListener('click', () => {
+            const color = button.dataset.color;
+            result.style.background = color;
+            result.textContent = 'Beautiful color!';
+            setHelperText('You made a new color!');
+        });
+    });
+};
+
+window.activities['floating-test'] = function() {
+    const content = document.getElementById('activityContent');
+    content.innerHTML = `
+        <div class="floating-game">
+            <h2>⛵ Floating & Sinking</h2>
+            <p>Tap the objects to explore what floats and what sinks.</p>
+            <div class="float-row">
+                <button class="float-item" type="button">🪙</button>
+                <button class="float-item" type="button">💧</button>
+                <button class="float-item" type="button">🪵</button>
+                <button class="float-item" type="button">⚙️</button>
+            </div>
+        </div>
+    `;
+
+    document.querySelectorAll('.float-item').forEach(button => {
+        button.addEventListener('click', () => {
+            button.classList.add('float-selected');
+            setTimeout(() => button.classList.remove('float-selected'), 250);
+            setHelperText('Nice thinking! Let’s test another object.');
+        });
+    });
+};
+
+window.activities['magnet-game'] = function() {
+    const content = document.getElementById('activityContent');
+    content.innerHTML = `
+        <div class="magnet-game-container">
+            <h2>🧲 Magnet Explorer</h2>
+            <p>Tap each object. Which ones will stick to the magnet?</p>
+
+            <div class="magnet-area">
+                <div class="magnet-item" style="background: linear-gradient(135deg, #FFD700, #FFA500); cursor: pointer;" onclick="testMagnet('coin', '🪙')">🪙 Coin</div>
+                <div class="magnet-item" style="background: linear-gradient(135deg, #87CEEB, #87CEEB); cursor: pointer;" onclick="testMagnet('water', '💧')">💧 Water Drop</div>
+                <div class="magnet-item" style="background: linear-gradient(135deg, #A9A9A9, #808080); cursor: pointer;" onclick="testMagnet('nail', '⚙️')">⚙️ Metal Nail</div>
+                <div class="magnet-item" style="background: linear-gradient(135deg, #D2691E, #8B4513); cursor: pointer;" onclick="testMagnet('wood', '🪵')">🪵 Wood</div>
+                <div class="magnet-item" style="background: linear-gradient(135deg, #FF69B4, #FF1493); cursor: pointer;" onclick="testMagnet('plastic', '🎀')">🎀 Plastic</div>
+                <div class="magnet-item" style="background: linear-gradient(135deg, #00CED1, #00BFFF); cursor: pointer;" onclick="testMagnet('glass', '🔷')">🔷 Glass</div>
+            </div>
+
+            <div class="water-container" id="magnetContainer" style="background: linear-gradient(to bottom, #FFE4B5, #FFDAB9);"></div>
+            <p id="magnetResult" style="font-size: 1.2em; font-weight: bold; text-align: center;"></p>
+        </div>
+    `;
+
+    window.testMagnet = function(object, emoji) {
+        const container = document.getElementById('magnetContainer');
+        const result = document.getElementById('magnetResult');
+        const magneticObjects = ['coin', 'nail'];
+        const isMagnetic = magneticObjects.includes(object);
+
+        container.innerHTML = '';
+
+        if (isMagnetic) {
+            const attractedDiv = document.createElement('div');
+            attractedDiv.className = 'floating-object magnet-attract';
+            attractedDiv.textContent = emoji;
+            attractedDiv.style.top = '10px';
+            attractedDiv.style.left = '50%';
+            container.appendChild(attractedDiv);
+            result.textContent = '✨ Magnetic! It sticks to the magnet!';
+            result.style.color = 'var(--success)';
+        } else {
+            const notAttractedDiv = document.createElement('div');
+            notAttractedDiv.className = 'sinking-object';
+            notAttractedDiv.textContent = emoji;
+            notAttractedDiv.style.left = Math.random() * 80 + '%';
+            container.appendChild(notAttractedDiv);
+            result.textContent = '❌ Not magnetic! It does not stick.';
+            result.style.color = 'var(--danger)';
+        }
+    };
+};
