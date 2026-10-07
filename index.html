@@ -3,121 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grade R Virtual Labs - Interactive STEM Learning</title>
+    <meta name="theme-color" content="#ff9ec4">
+    <title>Grade R Virtual Labs - Playful Learning</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🎓 Grade R Virtual Labs</h1>
-            <p class="subtitle">Interactive STEM Learning Platform for South African Grade R Students</p>
+    <div class="page-shell">
+        <header class="topbar">
+            <div class="brand-wrap">
+                <div class="brand-icon" aria-hidden="true">🎓</div>
+                <div>
+                    <h1>Grade R Virtual Labs</h1>
+                    <p class="subtitle">Playful learning with music, movement, and voice</p>
+                </div>
+            </div>
+
+            <div class="topbar-actions">
+                <button id="musicToggle" class="mini-btn" type="button">🎵 Play rhyme</button>
+                <button id="voiceToggle" class="mini-btn" type="button">🎤 Voice helper</button>
+                <button id="speakDemo" class="mini-btn accent-btn" type="button">🔊 Say hello</button>
+            </div>
         </header>
 
+        <section class="helper-panel" aria-live="polite">
+            <div class="helper-avatar" aria-hidden="true">🌟</div>
+            <div>
+                <h2>Little learner helper</h2>
+                <p id="helperText">Tap a lab and I will speak, cheer, and sing with you.</p>
+            </div>
+        </section>
+
         <div id="mainMenu" class="menu-container">
-            <h2>Choose Your Learning Adventure!</h2>
+            <h2>Choose your learning adventure!</h2>
             <div class="features">
-                <div class="feature-card" onclick="navigateTo('science')">
+                <div class="feature-card science-card" onclick="navigateTo('science')">
                     <div class="emoji">🔬</div>
                     <h3>Science Lab</h3>
-                    <p>Explore interactive science experiments and discover how the world works!</p>
-                    <button class="cta-button">Enter Lab</button>
+                    <p>Explore color, floating, and magnets with bright interactive discoveries.</p>
+                    <button class="cta-button" type="button">Enter Lab</button>
                 </div>
-                <div class="feature-card" onclick="navigateTo('math')">
+                <div class="feature-card math-card" onclick="navigateTo('math')">
                     <div class="emoji">🔢</div>
                     <h3>Math Lab</h3>
-                    <p>Fun and engaging math activities to build number skills and logical thinking.</p>
-                    <button class="cta-button">Enter Lab</button>
+                    <p>Count, match, and sort numbers and shapes in a cheerful game world.</p>
+                    <button class="cta-button" type="button">Enter Lab</button>
                 </div>
-                <div class="feature-card" onclick="navigateTo('creative')">
+                <div class="feature-card creative-card" onclick="navigateTo('creative')">
                     <div class="emoji">🎨</div>
                     <h3>Creative Play</h3>
-                    <p>Unleash creativity with interactive art and play-based learning activities.</p>
-                    <button class="cta-button">Enter Lab</button>
+                    <p>Paint, pattern, and make music with friendly characters and sound.</p>
+                    <button class="cta-button" type="button">Enter Lab</button>
                 </div>
             </div>
         </div>
 
-        <!-- Science Lab Section -->
         <div id="scienceLab" class="lab-section hidden">
-            <button class="back-btn" onclick="navigateTo('menu')">← Back to Menu</button>
+            <button class="back-btn" onclick="navigateTo('menu')" type="button">← Back to Menu</button>
             <h2>🔬 Science Lab</h2>
             <div class="activities-grid">
                 <div class="activity-card" onclick="loadActivity('color-mixer')">
                     <div class="emoji">🎨</div>
                     <h3>Color Mixer</h3>
                     <p>Mix primary colors and discover new colors!</p>
-                    <button class="activity-btn">Start Activity</button>
+                    <button class="activity-btn" type="button">Start Activity</button>
                 </div>
                 <div class="activity-card" onclick="loadActivity('floating-test')">
                     <div class="emoji">⛵</div>
                     <h3>Floating & Sinking</h3>
                     <p>Discover which objects float and which sink!</p>
-                    <button class="activity-btn">Start Activity</button>
+                    <button class="activity-btn" type="button">Start Activity</button>
                 </div>
                 <div class="activity-card" onclick="loadActivity('magnet-game')">
                     <div class="emoji">🧲</div>
                     <h3>Magnet Explorer</h3>
                     <p>Learn about magnetic and non-magnetic objects!</p>
-                    <button class="activity-btn">Start Activity</button>
+                    <button class="activity-btn" type="button">Start Activity</button>
                 </div>
             </div>
         </div>
 
-        <!-- Math Lab Section -->
         <div id="mathLab" class="lab-section hidden">
-            <button class="back-btn" onclick="navigateTo('menu')">← Back to Menu</button>
+            <button class="back-btn" onclick="navigateTo('menu')" type="button">← Back to Menu</button>
             <h2>🔢 Math Lab</h2>
             <div class="activities-grid">
                 <div class="activity-card" onclick="loadActivity('number-game')">
                     <div class="emoji">🎯</div>
                     <h3>Number Jump</h3>
                     <p>Learn numbers by jumping to the correct answer!</p>
-                    <button class="activity-btn">Start Activity</button>
+                    <button class="activity-btn" type="button">Start Activity</button>
                 </div>
                 <div class="activity-card" onclick="loadActivity('shape-sorter')">
                     <div class="emoji">⬜</div>
                     <h3>Shape Sorter</h3>
                     <p>Sort shapes by color and type!</p>
-                    <button class="activity-btn">Start Activity</button>
+                    <button class="activity-btn" type="button">Start Activity</button>
                 </div>
                 <div class="activity-card" onclick="loadActivity('counting-game')">
                     <div class="emoji">🍎</div>
                     <h3>Counting Game</h3>
                     <p>Count objects and match the numbers!</p>
-                    <button class="activity-btn">Start Activity</button>
+                    <button class="activity-btn" type="button">Start Activity</button>
                 </div>
             </div>
         </div>
 
-        <!-- Creative Lab Section -->
         <div id="creativeLab" class="lab-section hidden">
-            <button class="back-btn" onclick="navigateTo('menu')">← Back to Menu</button>
+            <button class="back-btn" onclick="navigateTo('menu')" type="button">← Back to Menu</button>
             <h2>🎨 Creative Play</h2>
             <div class="activities-grid">
                 <div class="activity-card" onclick="loadActivity('draw-canvas')">
                     <div class="emoji">🖌️</div>
                     <h3>Magic Canvas</h3>
                     <p>Draw and paint with colorful brushes!</p>
-                    <button class="activity-btn">Start Activity</button>
+                    <button class="activity-btn" type="button">Start Activity</button>
                 </div>
                 <div class="activity-card" onclick="loadActivity('pattern-maker')">
                     <div class="emoji">🎭</div>
                     <h3>Pattern Maker</h3>
                     <p>Create beautiful patterns with colors and shapes!</p>
-                    <button class="activity-btn">Start Activity</button>
+                    <button class="activity-btn" type="button">Start Activity</button>
                 </div>
                 <div class="activity-card" onclick="loadActivity('music-maker')">
                     <div class="emoji">🎵</div>
                     <h3>Music Maker</h3>
                     <p>Play sounds and create simple melodies!</p>
-                    <button class="activity-btn">Start Activity</button>
+                    <button class="activity-btn" type="button">Start Activity</button>
                 </div>
             </div>
         </div>
 
-        <!-- Activity Container -->
         <div id="activityContainer" class="activity-container hidden">
-            <button class="back-btn" onclick="goBackToLab()">← Back to Lab</button>
+            <button class="back-btn" onclick="goBackToLab()" type="button">← Back to Lab</button>
             <div id="activityContent"></div>
         </div>
 

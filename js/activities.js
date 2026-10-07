@@ -1,5 +1,15 @@
 window.activities = {};
 
+function announceActivity(title, prompt) {
+    const helperText = document.getElementById('helperText');
+    if (helperText) {
+        helperText.textContent = `${title}. ${prompt}`;
+    }
+    if (window.gradeRApp && typeof window.gradeRApp.speak === 'function') {
+        window.gradeRApp.speak(`${title}. ${prompt}`);
+    }
+}
+
 // ============================================
 // SCIENCE LAB ACTIVITIES
 // ============================================
@@ -9,7 +19,7 @@ window.activities['color-mixer'] = function() {
     content.innerHTML = `
         <div class="color-mixer-container">
             <h2>🎨 Color Mixer</h2>
-            <p>Click on two colors to mix them and see what new color you create!</p>
+            <p>Tap two colors to mix them and see what new color you create!</p>
             
             <div class="color-boxes">
                 <div class="color-box" style="background: #FF0000;" onclick="mixColors('red')"></div>
@@ -24,26 +34,34 @@ window.activities['color-mixer'] = function() {
             <button class="cta-button" onclick="resetMixer()">Reset</button>
         </div>
     `;
-    
+
+    announceActivity('Color Mixer', 'Tap two colors and watch the magic rainbow appear.');
+
     let selectedColors = [];
-    
+
     window.mixColors = function(color) {
         selectedColors.push(color);
-        
+
         if (selectedColors.length === 2) {
             const resultBox = document.getElementById('resultBox');
-            let mixed = mixColor(selectedColors[0], selectedColors[1]);
+            const mixed = mixColor(selectedColors[0], selectedColors[1]);
             resultBox.style.background = mixed.color;
             resultBox.textContent = mixed.name;
             selectedColors = [];
-            
+            if (window.gradeRApp && typeof window.gradeRApp.playSuccessCue === 'function') {
+                window.gradeRApp.playSuccessCue();
+            }
+            if (window.gradeRApp && typeof window.gradeRApp.speak === 'function') {
+                window.gradeRApp.speak(`Wonderful! ${mixed.name} is the new color.`);
+            }
+
             setTimeout(() => {
                 resultBox.style.background = '#cccccc';
                 resultBox.textContent = 'Mix colors!';
             }, 2000);
         }
     };
-    
+
     window.resetMixer = function() {
         selectedColors = [];
         document.getElementById('resultBox').style.background = '#cccccc';
@@ -63,7 +81,7 @@ function mixColor(color1, color2) {
         'yellow-yellow': { color: '#FFFF00', name: 'Yellow' },
         'blue-blue': { color: '#0000FF', name: 'Blue' }
     };
-    
+
     return combinations[`${color1}-${color2}`] || { color: '#cccccc', name: 'Mix colors!' };
 }
 
@@ -72,7 +90,7 @@ window.activities['floating-test'] = function() {
     content.innerHTML = `
         <div class="floating-test-container">
             <h2>⛵ Floating & Sinking Test</h2>
-            <p>Click on objects to drop them in water. See if they float or sink!</p>
+            <p>Tap an object to drop it in the water. Does it float or sink?</p>
             
             <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
                 <div class="object-item" onclick="testFloating('ball', '⚽')">⚽ Ball</div>
@@ -85,15 +103,17 @@ window.activities['floating-test'] = function() {
             <p id="result" style="font-size: 1.2em; font-weight: bold; color: var(--primary);"></p>
         </div>
     `;
-    
+
+    announceActivity('Floating and Sinking', 'Guess which objects float and which sink in the water.');
+
     window.testFloating = function(object, emoji) {
         const container = document.getElementById('waterContainer');
         const result = document.getElementById('result');
         const floatingObjects = ['ball', 'apple', 'feather'];
         const floats = floatingObjects.includes(object);
-        
+
         container.innerHTML = '';
-        
+
         if (floats) {
             const floatingDiv = document.createElement('div');
             floatingDiv.className = 'floating-object';
@@ -103,6 +123,12 @@ window.activities['floating-test'] = function() {
             container.appendChild(floatingDiv);
             result.textContent = '🎉 It floats!';
             result.style.color = 'var(--success)';
+            if (window.gradeRApp && typeof window.gradeRApp.playSuccessCue === 'function') {
+                window.gradeRApp.playSuccessCue();
+            }
+            if (window.gradeRApp && typeof window.gradeRApp.speak === 'function') {
+                window.gradeRApp.speak('Great thinking! That object floats!');
+            }
         } else {
             const sinkingDiv = document.createElement('div');
             sinkingDiv.className = 'sinking-object';
@@ -111,6 +137,9 @@ window.activities['floating-test'] = function() {
             container.appendChild(sinkingDiv);
             result.textContent = '⬇️ It sinks!';
             result.style.color = 'var(--danger)';
+            if (window.gradeRApp && typeof window.gradeRApp.speak === 'function') {
+                window.gradeRApp.speak('It sinks. That is a good observation!');
+            }
         }
     };
 };
@@ -120,7 +149,7 @@ window.activities['magnet-game'] = function() {
     content.innerHTML = `
         <div class="magnet-game-container">
             <h2>🧲 Magnet Explorer</h2>
-            <p>Click on objects. Magnetic objects will be attracted to the magnet! ✨</p>
+            <p>Tap each object. Which ones will stick to the magnet?</p>
             
             <div class="magnet-area">
                 <div class="magnet-item" style="background: linear-gradient(135deg, #FFD700, #FFA500); cursor: pointer;" onclick="testMagnet('coin', '🪙')">🪙 Coin</div>
@@ -135,15 +164,17 @@ window.activities['magnet-game'] = function() {
             <p id="magnetResult" style="font-size: 1.2em; font-weight: bold; text-align: center;"></p>
         </div>
     `;
-    
+
+    announceActivity('Magnet Explorer', 'Find the objects that can be pulled by a magnet.');
+
     window.testMagnet = function(object, emoji) {
         const container = document.getElementById('magnetContainer');
         const result = document.getElementById('magnetResult');
         const magneticObjects = ['coin', 'nail'];
         const isMagnetic = magneticObjects.includes(object);
-        
+
         container.innerHTML = '';
-        
+
         if (isMagnetic) {
             const attractedDiv = document.createElement('div');
             attractedDiv.className = 'floating-object';
@@ -154,14 +185,23 @@ window.activities['magnet-game'] = function() {
             container.appendChild(attractedDiv);
             result.textContent = '✨ Magnetic! It sticks to the magnet!';
             result.style.color = 'var(--success)';
+            if (window.gradeRApp && typeof window.gradeRApp.playSuccessCue === 'function') {
+                window.gradeRApp.playSuccessCue();
+            }
+            if (window.gradeRApp && typeof window.gradeRApp.speak === 'function') {
+                window.gradeRApp.speak('Yes! The magnet attracts it. Great job!');
+            }
         } else {
             const notAttractedDiv = document.createElement('div');
             notAttractedDiv.className = 'sinking-object';
             notAttractedDiv.textContent = emoji;
             notAttractedDiv.style.left = Math.random() * 80 + '%';
             container.appendChild(notAttractedDiv);
-            result.textContent = '❌ Not magnetic! It doesn\'t stick.';
+            result.textContent = '❌ Not magnetic! It does not stick.';
             result.style.color = 'var(--danger)';
+            if (window.gradeRApp && typeof window.gradeRApp.speak === 'function') {
+                window.gradeRApp.speak('That one is not magnetic. Nice try!');
+            }
         }
     };
 };
@@ -184,31 +224,33 @@ window.activities['number-game'] = function() {
             <div id="gameMessage"></div>
         </div>
     `;
-    
+
+    announceActivity('Number Jump', 'Look at the number and choose the next one.');
+
     let score = 0;
     let questions = 0;
     let currentQuestion = null;
-    
+
     function generateQuestion() {
         const number = Math.floor(Math.random() * 8) + 1;
         const nextNumber = number + 1;
         const options = [nextNumber];
-        
+
         while (options.length < 4) {
             const random = Math.floor(Math.random() * 10) + 1;
             if (!options.includes(random)) {
                 options.push(random);
             }
         }
-        
+
         options.sort(() => Math.random() - 0.5);
-        
+
         currentQuestion = { number, nextNumber, options };
         document.getElementById('numberDisplay').textContent = number;
-        
+
         const buttonsDiv = document.getElementById('answerButtons');
         buttonsDiv.innerHTML = '';
-        
+
         options.forEach(opt => {
             const btn = document.createElement('button');
             btn.className = 'number-btn';
@@ -217,28 +259,37 @@ window.activities['number-game'] = function() {
             buttonsDiv.appendChild(btn);
         });
     }
-    
+
     function checkAnswer(answer) {
         const message = document.getElementById('gameMessage');
         questions++;
-        
+
         if (answer === currentQuestion.nextNumber) {
             score++;
             message.innerHTML = '<div class="message success">🎉 Correct! Great job!</div>';
+            if (window.gradeRApp && typeof window.gradeRApp.playSuccessCue === 'function') {
+                window.gradeRApp.playSuccessCue();
+            }
+            if (window.gradeRApp && typeof window.gradeRApp.speak === 'function') {
+                window.gradeRApp.speak('Wonderful counting! That is correct.');
+            }
         } else {
             message.innerHTML = `<div class="message error">❌ Not quite! The correct answer is ${currentQuestion.nextNumber}</div>`;
+            if (window.gradeRApp && typeof window.gradeRApp.speak === 'function') {
+                window.gradeRApp.speak(`Nice try. The correct answer is ${currentQuestion.nextNumber}.`);
+            }
         }
-        
+
         document.getElementById('score').textContent = score;
-        
+
         if (questions < 5) {
-            setTimeout(generateQuestion, 2000);
+            setTimeout(generateQuestion, 1800);
         } else {
             message.innerHTML = `<div class="message success">🏆 Game Over! You got ${score} out of 5!</div>`;
             document.getElementById('answerButtons').innerHTML = '';
         }
     }
-    
+
     generateQuestion();
 };
 
@@ -247,7 +298,7 @@ window.activities['shape-sorter'] = function() {
     content.innerHTML = `
         <div class="shape-sorter-container">
             <h2>⬜ Shape Sorter</h2>
-            <p>Click on shapes to sort them by color and type!</p>
+            <p>Tap the shapes and put them into the matching color bin.</p>
             
             <div>
                 <h3>Shapes to Sort:</h3>
@@ -272,7 +323,9 @@ window.activities['shape-sorter'] = function() {
             <div id="sortingMessage" style="text-align: center; margin-top: 20px;"></div>
         </div>
     `;
-    
+
+    announceActivity('Shape Sorter', 'Sort each shape into the correct color group.');
+
     const shapes = [
         { shape: '🔴', color: 'red', label: 'Red Circle' },
         { shape: '🔵', color: 'blue', label: 'Blue Circle' },
@@ -281,31 +334,38 @@ window.activities['shape-sorter'] = function() {
         { shape: '🟦', color: 'blue', label: 'Blue Square' },
         { shape: '🟪', color: 'purple', label: 'Purple Circle' }
     ];
-    
+
     const shapesArea = document.getElementById('shapesArea');
-    shapes.forEach((item, index) => {
+    shapes.forEach((item) => {
         const shapeDiv = document.createElement('div');
         shapeDiv.className = 'shape';
         shapeDiv.textContent = item.shape;
-        shapeDiv.onclick = () => sortShape(item.color, index, shapeDiv);
+        shapeDiv.onclick = () => sortShape(item.color, shapeDiv);
         shapesArea.appendChild(shapeDiv);
     });
-    
+
     let sortedCount = 0;
-    
-    window.sortShape = function(color, index, element) {
+
+    window.sortShape = function(color, element) {
         const bins = { red: 'redBin', blue: 'blueBin', yellow: 'yellowBin' };
-        
+
         if (bins[color]) {
             const bin = document.getElementById(bins[color]);
             bin.appendChild(element);
             element.onclick = null;
             element.style.cursor = 'default';
             sortedCount++;
-            
+
+            if (window.gradeRApp && typeof window.gradeRApp.playSuccessCue === 'function') {
+                window.gradeRApp.playSuccessCue();
+            }
+
             const message = document.getElementById('sortingMessage');
             if (sortedCount === shapes.length) {
                 message.innerHTML = '<div class="message success">🎉 Perfect! All shapes sorted!</div>';
+                if (window.gradeRApp && typeof window.gradeRApp.speak === 'function') {
+                    window.gradeRApp.speak('Excellent sorting! You did it.');
+                }
             }
         }
     };
@@ -330,50 +390,61 @@ window.activities['counting-game'] = function() {
             <div class="score" id="countScore">Score: 0/5</div>
         </div>
     `;
-    
+
+    announceActivity('Counting Game', 'Count the fruits and say the number.');
+
     let score = 0;
     let questions = 0;
     let currentCount = 0;
-    
+
     function generateQuestion() {
         const count = Math.floor(Math.random() * 8) + 1;
         currentCount = count;
         const fruit = ['🍎', '🍊', '🍌', '🍓', '🍇'][Math.floor(Math.random() * 5)];
-        
+
         const display = document.getElementById('objectsDisplay');
         display.innerHTML = '';
-        
+
         for (let i = 0; i < count; i++) {
             const fruitDiv = document.createElement('div');
             fruitDiv.className = 'fruit';
             fruitDiv.textContent = fruit;
             display.appendChild(fruitDiv);
         }
-        
+
         document.getElementById('countInput').value = '';
     }
-    
+
     window.checkCount = function() {
-        const input = parseInt(document.getElementById('countInput').value);
+        const input = parseInt(document.getElementById('countInput').value, 10);
         const message = document.getElementById('countMessage');
         questions++;
-        
+
         if (input === currentCount) {
             score++;
             message.innerHTML = '<div class="message success">🎉 Correct! Great counting!</div>';
+            if (window.gradeRApp && typeof window.gradeRApp.playSuccessCue === 'function') {
+                window.gradeRApp.playSuccessCue();
+            }
+            if (window.gradeRApp && typeof window.gradeRApp.speak === 'function') {
+                window.gradeRApp.speak('Excellent counting! You counted them all.');
+            }
         } else {
             message.innerHTML = `<div class="message error">❌ Not quite! The answer was ${currentCount}</div>`;
+            if (window.gradeRApp && typeof window.gradeRApp.speak === 'function') {
+                window.gradeRApp.speak(`Nice try. The correct answer is ${currentCount}.`);
+            }
         }
-        
+
         document.getElementById('countScore').textContent = `Score: ${score}/${Math.min(questions, 5)}`;
-        
+
         if (questions < 5) {
-            setTimeout(generateQuestion, 2000);
+            setTimeout(generateQuestion, 1800);
         } else {
             message.innerHTML = `<div class="message success">🏆 Game Over! You got ${score} out of 5!</div>`;
         }
     };
-    
+
     generateQuestion();
 };
 
@@ -386,7 +457,7 @@ window.activities['draw-canvas'] = function() {
     content.innerHTML = `
         <div class="draw-container">
             <h2>🖌️ Magic Canvas</h2>
-            <p>Draw whatever you want! Choose a color and paint.</p>
+            <p>Paint a picture with your favorite colors.</p>
             
             <div class="color-palette" id="colorPalette">
                 <div class="color-option" style="background: #000000;" onclick="selectColor('#000000')"></div>
@@ -407,23 +478,24 @@ window.activities['draw-canvas'] = function() {
             </div>
         </div>
     `;
-    
+
+    announceActivity('Magic Canvas', 'Choose a color and make a bright, happy picture.');
+
     const canvas = document.getElementById('drawingCanvas');
     const ctx = canvas.getContext('2d');
     let isDrawing = false;
     let currentColor = '#000000';
     let brushSize = 5;
-    
-    // Mark first color as selected
+
     document.querySelector('.color-option').classList.add('selected');
-    
+
     canvas.addEventListener('mousedown', (e) => {
         isDrawing = true;
         const rect = canvas.getBoundingClientRect();
         ctx.beginPath();
         ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
     });
-    
+
     canvas.addEventListener('mousemove', (e) => {
         if (!isDrawing) return;
         const rect = canvas.getBoundingClientRect();
@@ -433,12 +505,12 @@ window.activities['draw-canvas'] = function() {
         ctx.lineCap = 'round';
         ctx.stroke();
     });
-    
+
     canvas.addEventListener('mouseup', () => {
         isDrawing = false;
         ctx.closePath();
     });
-    
+
     canvas.addEventListener('touchstart', (e) => {
         e.preventDefault();
         isDrawing = true;
@@ -447,7 +519,7 @@ window.activities['draw-canvas'] = function() {
         ctx.beginPath();
         ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
     });
-    
+
     canvas.addEventListener('touchmove', (e) => {
         e.preventDefault();
         if (!isDrawing) return;
@@ -459,27 +531,33 @@ window.activities['draw-canvas'] = function() {
         ctx.lineCap = 'round';
         ctx.stroke();
     });
-    
+
     canvas.addEventListener('touchend', () => {
         isDrawing = false;
         ctx.closePath();
     });
-    
+
     window.selectColor = function(color) {
         currentColor = color;
         document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
         event.target.classList.add('selected');
     };
-    
+
     window.clearCanvas = function() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (window.gradeRApp && typeof window.gradeRApp.speak === 'function') {
+            window.gradeRApp.speak('The canvas is clean and ready for a new picture.');
+        }
     };
-    
+
     window.downloadCanvas = function() {
         const link = document.createElement('a');
         link.download = 'my-drawing.png';
         link.href = canvas.toDataURL();
         link.click();
+        if (window.gradeRApp && typeof window.gradeRApp.speak === 'function') {
+            window.gradeRApp.speak('Your picture is ready to save.');
+        }
     };
 };
 
@@ -488,7 +566,7 @@ window.activities['pattern-maker'] = function() {
     content.innerHTML = `
         <div class="pattern-maker-container">
             <h2>🎭 Pattern Maker</h2>
-            <p>Click on cells to create beautiful patterns!</p>
+            <p>Tap the squares to build your own colorful pattern.</p>
             
             <div class="pattern-colors" id="patternColors">
                 <div class="color-option" style="background: #FF0000;" onclick="setPatternColor('#FF0000')"></div>
@@ -504,32 +582,39 @@ window.activities['pattern-maker'] = function() {
             <button class="cta-button" onclick="resetPattern()">Clear Pattern</button>
         </div>
     `;
-    
+
+    announceActivity('Pattern Maker', 'Pick a color and create a repeating pattern.');
+
     let currentPatternColor = '#FF0000';
     const grid = document.getElementById('patternGrid');
-    
-    // Mark first color as selected
+
     document.querySelector('.color-option').classList.add('selected');
-    
+
     for (let i = 0; i < 25; i++) {
         const cell = document.createElement('div');
         cell.className = 'pattern-cell';
         cell.onclick = () => {
             cell.style.background = currentPatternColor;
+            if (window.gradeRApp && typeof window.gradeRApp.playSuccessCue === 'function') {
+                window.gradeRApp.playSuccessCue();
+            }
         };
         grid.appendChild(cell);
     }
-    
+
     window.setPatternColor = function(color) {
         currentPatternColor = color;
         document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
         event.target.classList.add('selected');
     };
-    
+
     window.resetPattern = function() {
         document.querySelectorAll('.pattern-cell').forEach(cell => {
-            cell.style.background = 'var(--light)';
+            cell.style.background = '#f8f5ff';
         });
+        if (window.gradeRApp && typeof window.gradeRApp.speak === 'function') {
+            window.gradeRApp.speak('The pattern is reset. Let us make a new one.');
+        }
     };
 };
 
@@ -538,13 +623,15 @@ window.activities['music-maker'] = function() {
     content.innerHTML = `
         <div class="music-maker-container">
             <h2>🎵 Music Maker</h2>
-            <p>Click on the keys to play different sounds!</p>
+            <p>Tap the keys and make a cheerful tune together!</p>
             
             <div class="piano-keys" id="pianoKeys"></div>
             <div class="score">Notes played: <span id="notesCount">0</span></div>
         </div>
     `;
-    
+
+    announceActivity('Music Maker', 'Press the musical keys and make a happy tune.');
+
     const notes = [
         { key: 'C', freq: 261.63, label: 'C' },
         { key: 'D', freq: 293.66, label: 'D' },
@@ -555,12 +642,12 @@ window.activities['music-maker'] = function() {
         { key: 'B', freq: 493.88, label: 'B' },
         { key: 'C2', freq: 523.25, label: 'C' }
     ];
-    
+
     let notesPlayed = 0;
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    
+
     const keysContainer = document.getElementById('pianoKeys');
-    
+
     notes.forEach((note, index) => {
         const key = document.createElement('button');
         key.className = 'piano-key';
@@ -568,31 +655,32 @@ window.activities['music-maker'] = function() {
         key.onclick = () => playNote(note.freq, index);
         keysContainer.appendChild(key);
     });
-    
+
     function playNote(frequency, keyIndex) {
         const key = document.querySelectorAll('.piano-key')[keyIndex];
         key.style.transform = 'translateY(10px)';
-        
+
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
-        
+
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
-        
+
         oscillator.frequency.value = frequency;
         oscillator.type = 'sine';
-        
-        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+
+        gainNode.gain.setValueAtTime(0.25, audioContext.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-        
+
         oscillator.start(audioContext.currentTime);
         oscillator.stop(audioContext.currentTime + 0.5);
-        
+
         notesPlayed++;
         document.getElementById('notesCount').textContent = notesPlayed;
-        
+
         setTimeout(() => {
             key.style.transform = 'translateY(0)';
-        }, 100);
+        }, 130);
     }
 };
+
