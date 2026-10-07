@@ -6,6 +6,7 @@ const gradeRApp = {
     recognition: null,
     isListening: false,
     helperText: null,
+    micConsent: false
 };
 
 window.gradeRApp = gradeRApp;
@@ -13,6 +14,8 @@ window.gradeRApp = gradeRApp;
 function setHelperText(message) {
     const helperText = document.getElementById('helperText');
     if (helperText) helperText.textContent = message;
+    const caption = document.getElementById('caption');
+    if (caption) caption.textContent = message;
 }
 
 function ensureAudioContext() {
@@ -47,9 +50,8 @@ function playTone(frequency = 440, duration = 0.2, type = 'triangle', volume = 0
 }
 
 function playSuccessCue() {
-    playTone(523.25, 0.16, 'triangle', 0.08);
-    setTimeout(() => playTone(659.25, 0.16, 'triangle', 0.08), 120);
-    setTimeout(() => playTone(783.99, 0.22, 'triangle', 0.08), 240);
+    playTone(523.25, 0.12, 'triangle', 0.08);
+    setTimeout(() => playTone(659.25, 0.12, 'triangle', 0.08), 110);
 }
 
 function playBackgroundRhyme() {
@@ -90,6 +92,9 @@ function stopBackgroundRhyme() {
 }
 
 function speak(text, lang = 'en-ZA') {
+    const caption = document.getElementById('caption');
+    if (caption) caption.textContent = text;
+
     if (!('speechSynthesis' in window)) {
         setHelperText('Voice speech is not supported in this browser. You can still play and tap buttons.');
         return;
@@ -98,7 +103,7 @@ function speak(text, lang = 'en-ZA') {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = lang;
     utterance.rate = 0.94;
-    utterance.pitch = 1.15;
+    utterance.pitch = 1.05;
     utterance.onstart = () => setHelperText(text);
     utterance.onend = () => setHelperText('Great job! Ready for the next learning adventure.');
     speechSynthesis.cancel();
@@ -197,10 +202,42 @@ function bindVoiceRecognition() {
     gradeRApp.recognition = recognition;
 }
 
+function showConsentModal() {
+    const modal = document.getElementById('consentModal');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function hideConsentModal() {
+    const modal = document.getElementById('consentModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function requestMicConsentFlow() {
+    showConsentModal();
+    document.getElementById('consentAllow').onclick = async () => {
+        gradeRApp.micConsent = true;
+        hideConsentModal();
+        setHelperText('Mic permission granted. Tap Voice helper to start listening.');
+        // Note: do not start recognition automatically; user must press Voice helper
+        try {
+            await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (err) {
+            setHelperText('Mic permission denied at OS level. Voice commands will be unavailable.');
+            gradeRApp.micConsent = false;
+        }
+    };
+    document.getElementById('consentDeny').onclick = () => {
+        gradeRApp.micConsent = false;
+        hideConsentModal();
+        setHelperText('Mic permission not granted. Use on-screen controls instead.');
+    };
+}
+
 function initializeInteractiveHub() {
     const musicToggle = document.getElementById('musicToggle');
     const voiceToggle = document.getElementById('voiceToggle');
     const speakDemo = document.getElementById('speakDemo');
+    const downloadZip = document.getElementById('downloadZip');
 
     if (musicToggle) {
         musicToggle.addEventListener('click', () => {
@@ -214,6 +251,11 @@ function initializeInteractiveHub() {
 
     if (voiceToggle) {
         voiceToggle.addEventListener('click', () => {
+            if (!gradeRApp.micConsent) {
+                requestMicConsentFlow();
+                return;
+            }
+
             if (!gradeRApp.recognition) {
                 bindVoiceRecognition();
             }
@@ -242,6 +284,14 @@ function initializeInteractiveHub() {
     if (speakDemo) {
         speakDemo.addEventListener('click', () => {
             speak('Hello little learner! Nice to see you. Tap a lab and we will learn together!');
+        });
+    }
+
+    if (downloadZip) {
+        downloadZip.addEventListener('click', () => {
+            // Link to the branch zip (current feature branch)
+            const zipUrl = 'https://github.com/nhlanhlatsolo11-commits/grade-r-virtual-labs/archive/refs/heads/feature/interactive-launch-ready.zip';
+            window.open(zipUrl, '_blank');
         });
     }
 
