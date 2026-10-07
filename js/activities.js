@@ -1,3 +1,5 @@
+window.activities = window.activities || {};
+
 window.activities['music-maker'] = function() {
     const content = document.getElementById('activityContent');
     content.innerHTML = `
