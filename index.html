@@ -8,30 +8,21 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div id="audioOverlay" class="audio-overlay">
-        <div class="audio-overlay-box">
-            <div class="overlay-icon">🔊</div>
-            <h3>Tap to start the fun!</h3>
-            <p>We need one tap to turn on the sound and voice helper.</p>
-            <button id="enableAudioBtn" class="cta-button" type="button">Start Sound</button>
-        </div>
-    </div>
-
     <div class="page-shell">
         <header class="topbar">
             <div class="brand-wrap">
                 <div class="brand-icon" aria-hidden="true">🎓</div>
                 <div>
                     <h1>Grade R Virtual Labs</h1>
-                    <p class="subtitle">Playful learning with music, movement, and voice</p>
+                    <p class="subtitle">Playful learning with music, movement, and joy</p>
                 </div>
             </div>
 
             <div class="topbar-actions">
-                <button id="musicToggle" class="mini-btn" type="button">🎵 Play rhyme</button>
-                <button id="voiceToggle" class="mini-btn" type="button">🎤 Voice helper</button>
-                <button id="speakDemo" class="mini-btn accent-btn" type="button">🔊 Say hello</button>
-                <button id="downloadZip" class="mini-btn" type="button">⬇️ Download ZIP</button>
+                <button class="mini-btn" type="button" onclick="navigateTo('menu')">Home</button>
+                <button class="mini-btn" type="button" onclick="navigateTo('science')">Science</button>
+                <button class="mini-btn" type="button" onclick="navigateTo('math')">Math</button>
+                <button class="mini-btn accent-btn" type="button" onclick="navigateTo('creative')">Creative</button>
             </div>
         </header>
 
@@ -39,21 +30,10 @@
             <div class="helper-avatar" aria-hidden="true">🌟</div>
             <div>
                 <h2>Little learner helper</h2>
-                <p id="helperText">Tap a lab and I will speak, cheer, and sing with you.</p>
+                <p id="helperText">Choose a lab and start exploring!</p>
                 <div id="caption" class="caption" aria-live="polite"></div>
             </div>
         </section>
-
-        <div id="consentModal" class="consent-modal hidden" role="dialog" aria-modal="true" aria-labelledby="consentTitle">
-            <div class="consent-box">
-                <h3 id="consentTitle">Microphone access (optional)</h3>
-                <p>Enable voice commands so your learner can say simple words like “play”, “pause”, “science” or “math”. Microphone input is only used locally and is not sent anywhere.</p>
-                <div class="consent-actions">
-                    <button id="consentAllow" class="cta-button">Allow</button>
-                    <button id="consentDeny" class="back-btn">Not now</button>
-                </div>
-            </div>
-        </div>
 
         <div id="mainMenu" class="menu-container">
             <h2>Choose your learning adventure!</h2>
@@ -64,16 +44,18 @@
                     <p>Explore color, floating, and magnets with bright interactive discoveries.</p>
                     <button class="cta-button" type="button">Enter Lab</button>
                 </div>
+
                 <div class="feature-card math-card" onclick="navigateTo('math')">
                     <div class="emoji">🔢</div>
                     <h3>Math Lab</h3>
                     <p>Count, match, and sort numbers and shapes in a cheerful game world.</p>
                     <button class="cta-button" type="button">Enter Lab</button>
                 </div>
+
                 <div class="feature-card creative-card" onclick="navigateTo('creative')">
                     <div class="emoji">🎨</div>
                     <h3>Creative Play</h3>
-                    <p>Paint, pattern, and make music with friendly characters and sound.</p>
+                    <p>Paint, pattern, and make music with friendly characters and colorful activity cards.</p>
                     <button class="cta-button" type="button">Enter Lab</button>
                 </div>
             </div>
@@ -89,12 +71,14 @@
                     <p>Mix primary colors and discover new colors!</p>
                     <button class="activity-btn" type="button">Start Activity</button>
                 </div>
+
                 <div class="activity-card" onclick="loadActivity('floating-test')">
                     <div class="emoji">⛵</div>
                     <h3>Floating & Sinking</h3>
                     <p>Discover which objects float and which sink!</p>
                     <button class="activity-btn" type="button">Start Activity</button>
                 </div>
+
                 <div class="activity-card" onclick="loadActivity('magnet-game')">
                     <div class="emoji">🧲</div>
                     <h3>Magnet Explorer</h3>
@@ -114,12 +98,14 @@
                     <p>Learn numbers by jumping to the correct answer!</p>
                     <button class="activity-btn" type="button">Start Activity</button>
                 </div>
+
                 <div class="activity-card" onclick="loadActivity('shape-sorter')">
                     <div class="emoji">⬜</div>
                     <h3>Shape Sorter</h3>
                     <p>Sort shapes by color and type!</p>
                     <button class="activity-btn" type="button">Start Activity</button>
                 </div>
+
                 <div class="activity-card" onclick="loadActivity('counting-game')">
                     <div class="emoji">🍎</div>
                     <h3>Counting Game</h3>
@@ -139,16 +125,18 @@
                     <p>Draw and paint with colorful brushes!</p>
                     <button class="activity-btn" type="button">Start Activity</button>
                 </div>
+
                 <div class="activity-card" onclick="loadActivity('pattern-maker')">
                     <div class="emoji">🎭</div>
                     <h3>Pattern Maker</h3>
                     <p>Create beautiful patterns with colors and shapes!</p>
                     <button class="activity-btn" type="button">Start Activity</button>
                 </div>
+
                 <div class="activity-card" onclick="loadActivity('music-maker')">
                     <div class="emoji">🎵</div>
                     <h3>Music Maker</h3>
-                    <p>Play sounds and create simple melodies!</p>
+                    <p>Tap the keys to create a colorful rhythm!</p>
                     <button class="activity-btn" type="button">Start Activity</button>
                 </div>
             </div>
