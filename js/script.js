@@ -1,57 +1,11 @@
-const gradeRApp = {
-    audioCtx: null,
-    musicLoop: null,
-    musicNoteIndex: 0,
-    musicEnabled: false,
-    recognition: null,
-    isListening: false,
-    helperText: null,
-    micConsent: false
-};
-
-window.gradeRApp = gradeRApp;
-
-function setHelperText(message) {
-    const helperText = document.getElementById('helperText');
-    if (helperText) helperText.textContent = message;
-    const caption = document.getElementById('caption');
-    if (caption) caption.textContent = message;
+function showAudioOverlay() {
+    const overlay = document.getElementById('audioOverlay');
+    if (overlay) overlay.classList.remove('hidden');
 }
 
-function ensureAudioContext() {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextClass) return null;
-    if (!gradeRApp.audioCtx) {
-        gradeRApp.audioCtx = new AudioContextClass();
-    }
-    if (gradeRApp.audioCtx.state === 'suspended') {
-        gradeRApp.audioCtx.resume();
-    }
-    return gradeRApp.audioCtx;
-}
-
-function playTone(frequency = 440, duration = 0.2, type = 'triangle', volume = 0.08) {
-    const ctx = ensureAudioContext();
-    if (!ctx) return;
-
-    const oscillator = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-
-    oscillator.type = type;
-    oscillator.frequency.value = frequency;
-    gainNode.gain.setValueAtTime(volume, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
-
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
-
-    oscillator.start();
-    oscillator.stop(ctx.currentTime + duration);
-}
-
-function playSuccessCue() {
-    playTone(523.25, 0.12, 'triangle', 0.08);
-    setTimeout(() => playTone(659.25, 0.12, 'triangle', 0.08), 110);
+function hideAudioOverlay() {
+    const overlay = document.getElementById('audioOverlay');
+    if (overlay) overlay.classList.add('hidden');
 }
 
 function unlockAudioOnFirstGesture() {
@@ -66,6 +20,7 @@ function unlockAudioOnFirstGesture() {
                 speechSynthesis.cancel();
                 speechSynthesis.speak(u);
             }
+            hideAudioOverlay();
         } catch (e) {
             console.log('Audio/TTS unlock error', e);
         }
@@ -74,187 +29,14 @@ function unlockAudioOnFirstGesture() {
         document.removeEventListener('keydown', initOnce);
     }
 
+    const enableButton = document.getElementById('enableAudioBtn');
+    if (enableButton) {
+        enableButton.addEventListener('click', initOnce);
+    }
+
     document.addEventListener('pointerdown', initOnce, { once: true });
     document.addEventListener('touchstart', initOnce, { once: true });
     document.addEventListener('keydown', initOnce, { once: true });
-}
-
-function playBackgroundRhyme() {
-    const ctx = ensureAudioContext();
-    if (!ctx) return;
-
-    const tune = [261.63, 261.63, 392.0, 392.0, 440.0, 440.0, 392.0, 349.23, 349.23, 329.63, 329.63, 293.66, 293.66, 261.63];
-
-    gradeRApp.musicEnabled = true;
-    const musicButton = document.getElementById('musicToggle');
-    if (musicButton) {
-        musicButton.textContent = '🎵 Pause rhyme';
-    }
-    setHelperText('The nursery rhyme is playing. Tap the cards and I will cheer you on!');
-
-    if (gradeRApp.musicLoop) {
-        clearInterval(gradeRApp.musicLoop);
-    }
-
-    gradeRApp.musicLoop = setInterval(() => {
-        const note = tune[gradeRApp.musicNoteIndex % tune.length];
-        playTone(note, 0.22, 'sine', 0.06);
-        gradeRApp.musicNoteIndex += 1;
-    }, 420);
-}
-
-function stopBackgroundRhyme() {
-    if (gradeRApp.musicLoop) {
-        clearInterval(gradeRApp.musicLoop);
-        gradeRApp.musicLoop = null;
-    }
-    gradeRApp.musicEnabled = false;
-    const musicButton = document.getElementById('musicToggle');
-    if (musicButton) {
-        musicButton.textContent = '🎵 Play rhyme';
-    }
-    setHelperText('The music is paused. Ready when you are!');
-}
-
-function speak(text, lang = 'en-ZA') {
-    const caption = document.getElementById('caption');
-    if (caption) caption.textContent = text;
-
-    if (!('speechSynthesis' in window)) {
-        setHelperText('Voice speech is not supported in this browser. You can still play and tap buttons.');
-        return;
-    }
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang;
-    utterance.rate = 0.94;
-    utterance.pitch = 1.05;
-    utterance.onstart = () => setHelperText(text);
-    utterance.onend = () => setHelperText('Great job! Ready for the next learning adventure.');
-    speechSynthesis.cancel();
-    speechSynthesis.speak(utterance);
-}
-
-function handleVoiceCommand(command) {
-    const text = command.toLowerCase();
-
-    if (text.includes('play') || text.includes('music') || text.includes('sing')) {
-        playBackgroundRhyme();
-        speak('Let us sing a nursery rhyme together!');
-        return;
-    }
-
-    if (text.includes('pause') || text.includes('stop')) {
-        stopBackgroundRhyme();
-        speak('Music paused. We can keep learning.');
-        return;
-    }
-
-    if (text.includes('hello') || text.includes('hi')) {
-        speak('Hello little learner! I am ready to help you learn.');
-        return;
-    }
-
-    if (text.includes('science')) {
-        navigateTo('science');
-        speak('Science lab opened. Let us explore!');
-        return;
-    }
-
-    if (text.includes('math')) {
-        navigateTo('math');
-        speak('Math lab opened. Time to count and play!');
-        return;
-    }
-
-    if (text.includes('creative') || text.includes('art')) {
-        navigateTo('creative');
-        speak('Creative play opened. Let us paint and make music!');
-        return;
-    }
-
-    if (text.includes('menu')) {
-        navigateTo('menu');
-        speak('Back to the menu. Choose your next adventure.');
-        return;
-    }
-
-    if (text.includes('start') || text.includes('go')) {
-        navigateTo('science');
-        speak('Let us begin our science adventure!');
-        return;
-    }
-
-    speak('I heard you. Please say play, pause, hello, science, math, creative, or menu.');
-}
-
-function bindVoiceRecognition() {
-    const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognitionClass) {
-        const voiceToggle = document.getElementById('voiceToggle');
-        if (voiceToggle) {
-            voiceToggle.disabled = true;
-            voiceToggle.title = 'Voice recognition is not supported in this browser.';
-            voiceToggle.textContent = '🎤 Voice unavailable';
-        }
-        return;
-    }
-
-    const recognition = new SpeechRecognitionClass();
-    recognition.lang = 'en-ZA';
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        setHelperText(`I heard: “${transcript}”`);
-        handleVoiceCommand(transcript);
-    };
-
-    recognition.onend = () => {
-        gradeRApp.isListening = false;
-        const voiceToggle = document.getElementById('voiceToggle');
-        if (voiceToggle) {
-            voiceToggle.textContent = '🎤 Voice helper';
-        }
-    };
-
-    recognition.onerror = () => {
-        setHelperText('Voice recognition could not hear you. Try tapping the buttons or saying louder.');
-        gradeRApp.isListening = false;
-    };
-
-    gradeRApp.recognition = recognition;
-}
-
-function showConsentModal() {
-    const modal = document.getElementById('consentModal');
-    if (modal) modal.classList.remove('hidden');
-}
-
-function hideConsentModal() {
-    const modal = document.getElementById('consentModal');
-    if (modal) modal.classList.add('hidden');
-}
-
-function requestMicConsentFlow() {
-    showConsentModal();
-    document.getElementById('consentAllow').onclick = async () => {
-        gradeRApp.micConsent = true;
-        hideConsentModal();
-        setHelperText('Mic permission granted. Tap Voice helper to start listening.');
-        try {
-            await navigator.mediaDevices.getUserMedia({ audio: true });
-        } catch (err) {
-            setHelperText('Mic permission denied at OS level. Voice commands will be unavailable.');
-            gradeRApp.micConsent = false;
-        }
-    };
-    document.getElementById('consentDeny').onclick = () => {
-        gradeRApp.micConsent = false;
-        hideConsentModal();
-        setHelperText('Mic permission not granted. Use on-screen controls instead.');
-    };
 }
 
 function initializeInteractiveHub() {
@@ -326,12 +108,8 @@ function initializeInteractiveHub() {
 
 window.addEventListener('load', () => {
     initializeInteractiveHub();
+    showAudioOverlay();
     setTimeout(() => {
         speak('Welcome to Grade R Virtual Labs! Choose a learning adventure.');
     }, 500);
 });
-
-window.gradeRApp.speak = speak;
-window.gradeRApp.playSuccessCue = playSuccessCue;
-window.gradeRApp.playBackgroundRhyme = playBackgroundRhyme;
-window.gradeRApp.stopBackgroundRhyme = stopBackgroundRhyme;
