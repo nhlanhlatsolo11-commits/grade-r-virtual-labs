@@ -1,10 +1,12 @@
 window.activities = window.activities || {};
 
-// small helper for audio: create/resume AudioContext and play tones
+// ---------- AUDIO HELPERS ----------
 function _ensureAudioCtx() {
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!window._audioCtx) window._audioCtx = new AudioCtx();
+    if (!window._audioCtx) {
+      window._audioCtx = new AudioCtx();
+    }
     if (window._audioCtx.state === 'suspended' && typeof window._audioCtx.resume === 'function') {
       window._audioCtx.resume();
     }
@@ -17,100 +19,213 @@ function _ensureAudioCtx() {
 function _playTone(freq, duration = 220, type = 'sine') {
   const ctx = _ensureAudioCtx();
   if (!ctx) return;
+
   try {
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = type;
-    o.frequency.value = freq;
-    o.connect(g);
-    g.connect(ctx.destination);
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = type;
+    osc.frequency.value = freq;
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
     const now = ctx.currentTime;
-    g.gain.setValueAtTime(0.001, now);
-    g.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
-    o.start(now);
-    g.gain.exponentialRampToValueAtTime(0.0001, now + duration / 1000);
-    o.stop(now + duration / 1000 + 0.02);
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
+    osc.start(now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration / 1000);
+    osc.stop(now + duration / 1000 + 0.02);
   } catch (e) {
-    // ignore audio errors
+    // ignore unsupported browsers
   }
 }
 
-// ----- MUSIC MAKER (visual + audio) -----
+// ---------- COLOR HELPERS ----------
+function _hexToRgb(hex) {
+  const value = hex.replace('#', '');
+  const bigint = parseInt(value, 16);
+  return {
+    r: (bigint >> 16) & 255,
+    g: (bigint >> 8) & 255,
+    b: bigint & 255
+  };
+}
+
+function _rgbToHex(r, g, b) {
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+function _mixHexColors(hexList) {
+  const rgbList = hexList.map(_hexToRgb);
+  const total = rgbList.reduce((acc, cur) => {
+    acc.r += cur.r;
+    acc.g += cur.g;
+    acc.b += cur.b;
+    return acc;
+  }, { r: 0, g: 0, b: 0 });
+
+  const count = rgbList.length || 1;
+  const mixed = {
+    r: Math.round(total.r / count),
+    g: Math.round(total.g / count),
+    b: Math.round(total.b / count)
+  };
+  return _rgbToHex(mixed.r, mixed.g, mixed.b);
+}
+
+function _colorDistanceHex(a, b) {
+  const ra = _hexToRgb(a);
+  const rb = _hexToRgb(b);
+  const dr = ra.r - rb.r;
+  const dg = ra.g - rb.g;
+  const db = ra.b - rb.b;
+  return Math.sqrt(dr * dr + dg * dg + db * db);
+}
+
+// ---------- MUSIC MAKER ----------
 window.activities['music-maker'] = function() {
   const content = document.getElementById('activityContent');
+
   content.innerHTML = `
-    <div class="music-maker-container">
+    <div class="game-card">
       <h2>🎵 Music Maker</h2>
-      <p>Tap keys to make a tune. Try a short melody!</p>
+      <p>Listen to the pattern and tap the same notes back.</p>
+      <div id="musicPattern" class="score-badge">Pattern: ready</div>
       <div class="piano-keys" id="pianoKeys"></div>
-      <div class="score">Notes played: <span id="notesCount">0</span></div>
-      <div style="margin-top:12px"><button class="mini-btn" id="clearTune" type="button">Clear</button></div>
+      <div class="score-badge" style="margin-top:12px;">Notes played: <span id="notesCount">0</span></div>
+      <div style="margin-top:12px;">
+        <button id="playPatternBtn" class="mini-btn" type="button">Play Pattern</button>
+        <button id="clearTuneBtn" class="mini-btn" type="button">Clear</button>
+      </div>
+      <div id="musicFeedback" class="feedback"></div>
     </div>
   `;
 
-  const notes = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
+  const notes = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'C'];
+  const pattern = [];
+  let userSequence = [];
   let notesPlayed = 0;
+
+  function generatePattern() {
+    const length = 3 + Math.floor(Math.random() * 2);
+    pattern.length = 0;
+    for (let i = 0; i < length; i++) {
+      pattern.push(Math.floor(Math.random() * notes.length));
+    }
+    document.getElementById('musicPattern').textContent = `Pattern: ${pattern.map(i => notes[i]).join(' ')}`;
+    userSequence = [];
+    notesPlayed = 0;
+    document.getElementById('notesCount').textContent = notesPlayed;
+    setHelperText('Listen first, then repeat the pattern');
+  }
+
+  function playPattern() {
+    const notesFreq = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
+    const patternButtons = Array.from(document.querySelectorAll('.piano-key'));
+
+    patternButtons.forEach(btn => btn.disabled = true);
+
+    pattern.forEach((index, i) => {
+      setTimeout(() => {
+        const btn = patternButtons[index];
+        if (btn) {
+          btn.classList.add('active');
+          _playTone(notesFreq[index], 180, 'sine');
+          setTimeout(() => btn.classList.remove('active'), 220);
+        }
+      }, i * 300);
+    });
+
+    setTimeout(() => {
+      patternButtons.forEach(btn => btn.disabled = false);
+      setHelperText('Your turn! Tap the notes in the same order');
+    }, pattern.length * 340);
+  }
+
+  function checkSequence() {
+    const expected = pattern[userSequence.length - 1];
+    if (userSequence.length <= pattern.length) {
+      if (expected !== undefined && userSequence[userSequence.length - 1] === expected) {
+        if (userSequence.length === pattern.length) {
+          const feedback = document.getElementById('musicFeedback');
+          feedback.className = 'feedback success';
+          feedback.textContent = 'Great job! You matched the pattern!';
+          setHelperText('Awesome! You matched the pattern.');
+          _playTone(880, 220, 'sine');
+          setTimeout(generatePattern, 1000);
+        }
+      } else {
+        const feedback = document.getElementById('musicFeedback');
+        feedback.className = 'feedback error';
+        feedback.textContent = 'Almost! Listen again and try the same pattern.';
+        setHelperText('Almost! Try again.');
+        _playTone(220, 180, 'sawtooth');
+        setTimeout(playPattern, 800);
+      }
+    }
+  }
+
   const keysContainer = document.getElementById('pianoKeys');
   keysContainer.innerHTML = '';
 
-  // build keys large for touch
-  notes.forEach((freq, i) => {
+  const notesFreq = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
+  notes.forEach((note, index) => {
     const key = document.createElement('button');
-    key.className = 'piano-key';
     key.type = 'button';
-    key.textContent = ['C','D','E','F','G','A','B','C'][i];
+    key.className = 'piano-key';
+    key.textContent = note;
     key.addEventListener('click', () => {
-      // resume audio context on first user gesture
       _ensureAudioCtx();
-      visualPlayNote(i, key, freq);
+      _playTone(notesFreq[index], 220, 'sine');
+      key.classList.add('active');
+      setTimeout(() => key.classList.remove('active'), 180);
+
+      userSequence.push(index);
+      notesPlayed++;
+      document.getElementById('notesCount').textContent = notesPlayed;
+      checkSequence();
     });
     keysContainer.appendChild(key);
   });
 
-  document.getElementById('clearTune').addEventListener('click', () => {
+  document.getElementById('playPatternBtn').addEventListener('click', playPattern);
+  document.getElementById('clearTuneBtn').addEventListener('click', () => {
+    userSequence = [];
     notesPlayed = 0;
-    const el = document.getElementById('notesCount');
-    if (el) el.textContent = notesPlayed;
-    setHelperText('Tune cleared');
+    document.getElementById('notesCount').textContent = notesPlayed;
+    setHelperText('Pattern cleared');
   });
 
-  function visualPlayNote(keyIndex, keyElement, freq) {
-    keyElement.classList.add('active');
-    _playTone(freq, 220, 'sine');
-
-    notesPlayed++;
-    const notesEl = document.getElementById('notesCount');
-    if (notesEl) {
-      notesEl.textContent = notesPlayed;
-      notesEl.classList.add('pulse');
-      setTimeout(() => notesEl.classList.remove('pulse'), 200);
-    }
-
-    setTimeout(() => keyElement.classList.remove('active'), 180);
-  }
+  generatePattern();
 };
 
-// ----- DRAW CANVAS (improvements) -----
+// ---------- DRAW CANVAS ----------
 window.activities['draw-canvas'] = function() {
   const content = document.getElementById('activityContent');
+
   content.innerHTML = `
-    <div class="canvas-play">
+    <div class="game-card">
       <h2>🖌️ Magic Canvas</h2>
-      <p>Pick a brush then tap to paint. Try making a pattern!</p>
+      <p>Choose a color and paint a cheerful picture on the canvas.</p>
       <div class="brush-row">
         <button class="brush-btn red" type="button" data-color="#ff5d8f">Red</button>
         <button class="brush-btn yellow" type="button" data-color="#ffd166">Yellow</button>
         <button class="brush-btn blue" type="button" data-color="#5ec8ff">Blue</button>
         <button class="brush-btn green" type="button" data-color="#70e089">Green</button>
       </div>
-      <canvas id="paintCanvas" width="640" height="360" style="max-width:100%;border-radius:12px;background:#fff9ea"></canvas>
-      <div style="margin-top:10px"><button class="mini-btn" id="clearCanvas">Clear</button></div>
+      <canvas id="paintCanvas" width="620" height="340" style="max-width:100%;border-radius:12px;background:#fff9ea"></canvas>
+      <div style="margin-top:12px;">
+        <button id="clearCanvas" class="mini-btn" type="button">Clear</button>
+      </div>
+      <div id="paintFeedback" class="feedback"></div>
     </div>
   `;
 
   const canvas = document.getElementById('paintCanvas');
   const ctx = canvas.getContext('2d');
   let currentColor = '#ff5d8f';
+
   ctx.fillStyle = '#fff9ea';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -119,7 +234,7 @@ window.activities['draw-canvas'] = function() {
       currentColor = button.dataset.color;
       document.querySelectorAll('.brush-btn').forEach(btn => btn.classList.remove('selected'));
       button.classList.add('selected');
-      setHelperText('Brush selected');
+      setHelperText('Brush chosen');
     });
   });
 
@@ -127,11 +242,16 @@ window.activities['draw-canvas'] = function() {
     const rect = canvas.getBoundingClientRect();
     const x = (event.clientX - rect.left) * (canvas.width / rect.width);
     const y = (event.clientY - rect.top) * (canvas.height / rect.height);
+
     ctx.beginPath();
     ctx.fillStyle = currentColor;
-    ctx.arc(x, y, 22, 0, Math.PI * 2);
+    ctx.arc(x, y, 18, 0, Math.PI * 2);
     ctx.fill();
-    _playTone(600, 100, 'triangle'); // gentle sound on paint
+
+    _playTone(620, 100, 'triangle');
+    const feedback = document.getElementById('paintFeedback');
+    feedback.className = 'feedback success';
+    feedback.textContent = 'Splash! Nice painting!';
   });
 
   document.getElementById('clearCanvas').addEventListener('click', () => {
@@ -141,37 +261,52 @@ window.activities['draw-canvas'] = function() {
   });
 };
 
-// ----- PATTERN MAKER (unchanged but better layout) -----
+// ---------- PATTERN MAKER ----------
 window.activities['pattern-maker'] = function() {
   const content = document.getElementById('activityContent');
-  content.innerHTML = `
-    <div class="pattern-maker">
-      <h2>🎭 Pattern Maker</h2>
-      <p>Tap cells to change colors and create a pattern. Try repeating sequences!</p>
-      <div class="pattern-grid" id="patternGrid"></div>
-    </div>
-  `;
-  const grid = document.getElementById('patternGrid');
-  grid.innerHTML = '';
-  const colors = ['#ff5d8f', '#ffd166', '#5ec8ff', '#70e089', '#b58cff'];
-  for (let i = 0; i < 16; i++) {
-    const cell = document.createElement('button');
-    cell.type = 'button';
-    cell.className = 'pattern-cell';
-    cell.dataset.color = colors[i % colors.length];
-    cell.addEventListener('click', () => {
-      const current = cell.dataset.color;
-      const next = colors[(colors.indexOf(current) + 1) % colors.length];
-      cell.dataset.color = next;
-      cell.style.background = next;
-      _playTone(800 + (i * 10), 80, 'sine');
-    });
-    cell.style.background = colors[i % colors.length];
-    grid.appendChild(cell);
+
+  const targetPattern = ['red', 'yellow', 'blue', 'green'];
+  const playerPattern = [];
+
+  function render() {
+    content.innerHTML = `
+      <div class="game-card">
+        <h2>🎭 Pattern Maker</h2>
+        <p>Follow the pattern in the same order.</p>
+        <div class="challenge-box">
+          <div class="target-swatch" style="background:#ff5d8f"></div>
+          <div class="target-swatch" style="background:#ffd166"></div>
+          <div class="target-swatch" style="background:#5ec8ff"></div>
+          <div class="target-swatch" style="background:#70e089"></div>
+        </div>
+        <div class="pattern-grid" id="patternGrid"></div>
+        <div id="patternFeedback" class="feedback"></div>
+      </div>
+    `;
+    const grid = document.getElementById('patternGrid');
+    const colors = ['#ff5d8f', '#ffd166', '#5ec8ff', '#70e089', '#b58cff'];
+    grid.innerHTML = '';
+
+    for (let i = 0; i < 12; i++) {
+      const cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'pattern-cell';
+      cell.style.background = colors[i % colors.length];
+      cell.addEventListener('click', () => {
+        const currentColor = cell.style.backgroundColor || cell.dataset.color || colors[i % colors.length];
+        const nextColor = colors[(colors.indexOf(currentColor) || 0) + 1 % colors.length];
+        cell.style.background = colors[(colors.indexOf(currentColor) + 1) % colors.length];
+        _playTone(600 + i * 20, 120, 'sine');
+        playerPattern.push(colors[(colors.indexOf(currentColor) + 1) % colors.length]);
+      });
+      grid.appendChild(cell);
+    }
   }
+
+  render();
 };
 
-// ----- NUMBER GAME with progression, scoring, feedback -----
+// ---------- NUMBER GAME ----------
 window.activities['number-game'] = function() {
   const content = document.getElementById('activityContent');
   let round = 1;
@@ -181,11 +316,12 @@ window.activities['number-game'] = function() {
   function renderRound() {
     const target = Math.floor(Math.random() * 10) + 1;
     content.innerHTML = `
-      <div class="number-game">
+      <div class="game-card">
         <h2>🎯 Number Jump</h2>
-        <p id="roundPrompt">Round ${round} / ${maxRounds} — Tap the number <strong>${target}</strong>!</p>
+        <p>Round ${round}/${maxRounds} — tap the number <strong>${target}</strong>!</p>
         <div class="number-grid" id="numberGrid"></div>
-        <div style="margin-top:12px">Score: <span id="gameScore">${score}</span></div>
+        <div class="score-badge" style="margin-top:12px;">Score: <span id="gameScore">${score}</span></div>
+        <div id="numberFeedback" class="feedback"></div>
       </div>
     `;
 
@@ -193,331 +329,243 @@ window.activities['number-game'] = function() {
     grid.innerHTML = '';
 
     for (let n = 1; n <= 10; n++) {
-      const b = document.createElement('button');
-      b.className = 'number-btn';
-      b.type = 'button';
-      b.textContent = n;
-      b.addEventListener('click', () => handlePick(n, target, b));
-      grid.appendChild(b);
-    }
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'number-btn';
+      button.textContent = n;
 
-    function handlePick(value, targetValue, buttonEl) {
-      // prevent double clicks
-      if (buttonEl.disabled) return;
-      if (value === targetValue) {
-        buttonEl.classList.add('correct');
-        buttonEl.textContent = '✓';
-        _playTone(880, 220, 'sine');
-        score += 10;
-        setHelperText('Great job! You found the number!');
-        document.getElementById('gameScore').textContent = score;
-        // next round after short delay
-        setTimeout(() => {
-          round++;
-          if (round <= maxRounds) renderRound();
-          else showResults();
-        }, 900);
-      } else {
-        buttonEl.classList.add('wrong');
-        _playTone(220, 180, 'sawtooth');
-        setHelperText('Try again!');
-        buttonEl.disabled = true;
-        setTimeout(() => buttonEl.classList.remove('wrong'), 400);
-      }
-    }
-  }
+      button.addEventListener('click', () => {
+        if (button.disabled) return;
 
-  function showResults() {
-    content.innerHTML = `
-      <div class="number-game-results">
-        <h2>🏆 Well done!</h2>
-        <p>You scored <strong>${score}</strong> points</p>
-        <div style="margin-top:12px"><button class="cta-button" id="playAgain">Play Again</button></div>
-      </div>
-    `;
-    document.getElementById('playAgain').addEventListener('click', () => {
-      round = 1; score = 0; renderRound();
-    });
+        if (Number(button.textContent) === target) {
+          button.classList.add('correct');
+          button.textContent = '✓';
+          button.disabled = true;
+          score += 10;
+          document.getElementById('gameScore').textContent = score;
+          setHelperText('Great job! You found the number!');
+          _playTone(880, 230, 'sine');
+
+          const feedback = document.getElementById('numberFeedback');
+          feedback.className = 'feedback success';
+          feedback.textContent = 'Correct! Great work!';
+          setTimeout(() => {
+            round++;
+            if (round <= maxRounds) {
+              renderRound();
+            } else {
+              content.innerHTML = `
+                <div class="game-card">
+                  <h2>🏆 You win!</h2>
+                  <p>You completed all rounds and scored <strong>${score}</strong> points.</p>
+                  <div class="score-badge">Final score: ${score}</div>
+                  <div style="margin-top: 12px;">
+                    <button id="playAgainBtn" class="cta-button" type="button">Play Again</button>
+                  </div>
+                </div>
+              `;
+              document.getElementById('playAgainBtn').addEventListener('click', () => {
+                round = 1;
+                score = 0;
+                renderRound();
+              });
+            }
+          }, 900);
+        } else {
+          button.classList.add('wrong');
+          button.disabled = true;
+          _playTone(220, 160, 'sawtooth');
+          setHelperText('Try again!');
+          const feedback = document.getElementById('numberFeedback');
+          feedback.className = 'feedback error';
+          feedback.textContent = 'Not this one — try again!';
+          setTimeout(() => {
+            button.classList.remove('wrong');
+            button.disabled = false;
+          }, 450);
+        }
+      });
+
+      grid.appendChild(button);
+    }
   }
 
   renderRound();
 };
 
-// ----- SHAPE SORTER (small improvement) -----
+// ---------- SHAPE SORTER ----------
 window.activities['shape-sorter'] = function() {
   const content = document.getElementById('activityContent');
+
+  let collected = 0;
+  const shapes = ['◯', '△', '◼', '★'];
+  const row = [];
+
   content.innerHTML = `
-    <div class="shape-sorter">
+    <div class="game-card">
       <h2>⬜ Shape Sorter</h2>
-      <p>Tap the shapes to collect them. Tap all to finish the round.</p>
+      <p>Tap each shape to collect it.</p>
       <div class="shape-row" id="shapeRow"></div>
-      <div style="margin-top:12px">Collected: <span id="collected">0</span></div>
+      <div class="score-badge" style="margin-top:12px;">Collected: <span id="shapeCount">0</span></div>
+      <div id="shapeFeedback" class="feedback"></div>
     </div>
   `;
 
-  const row = document.getElementById('shapeRow');
-  row.innerHTML = '';
-  const shapes = ['◯','◼','△','★'];
-  let collected = 0;
-  shapes.forEach((s) => {
-    const btn = document.createElement('button');
-    btn.className = 'shape-item';
-    btn.type = 'button';
-    btn.textContent = s;
-    btn.addEventListener('click', () => {
-      if (btn.disabled) return;
-      btn.classList.add('selected-shape');
+  const shapeRow = document.getElementById('shapeRow');
+  shapes.forEach((shape) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'shape-item';
+    button.textContent = shape;
+
+    button.addEventListener('click', () => {
+      if (button.disabled) return;
+
+      button.classList.add('selected-shape');
+      row.push(shape);
       collected++;
-      document.getElementById('collected').textContent = collected;
-      _playTone(700 + collected * 40, 120, 'triangle');
-      btn.disabled = true;
-      setTimeout(() => btn.classList.remove('selected-shape'), 300);
+      document.getElementById('shapeCount').textContent = collected;
+      _playTone(700 + collected * 40, 140, 'triangle');
+
+      const feedback = document.getElementById('shapeFeedback');
+      feedback.className = 'feedback success';
+      feedback.textContent = 'Nice! You found a shape!';
+      setHelperText('You collected a shape!');
+
+      button.disabled = true;
+
       if (collected === shapes.length) {
-        setHelperText('You collected all shapes! Great!');
+        const feedback = document.getElementById('shapeFeedback');
+        feedback.className = 'feedback success';
+        feedback.textContent = 'You collected all the shapes! Great job!';
+        setHelperText('You collected all the shapes!');
       }
     });
-    row.appendChild(btn);
+    shapeRow.appendChild(button);
   });
 };
 
-// ----- COUNTING GAME (improve scoring and disable) -----
+// ---------- COUNTING GAME ----------
 window.activities['counting-game'] = function() {
   const content = document.getElementById('activityContent');
+
   const total = 5;
   let counted = 0;
+
   content.innerHTML = `
-    <div class="counting-game">
+    <div class="game-card">
       <h2>🍎 Counting Game</h2>
-      <p>Tap the apples to count them: <strong>${total}</strong></p>
+      <p>Tap the apples to count them. You need to count all <strong>${total}</strong>.</p>
       <div class="apple-row" id="appleRow"></div>
-      <div style="margin-top:12px">Counted: <span id="counted">0</span></div>
+      <div class="score-badge" style="margin-top:12px;">Counted: <span id="countedValue">0</span></div>
+      <div id="countFeedback" class="feedback"></div>
     </div>
   `;
 
   const row = document.getElementById('appleRow');
   row.innerHTML = '';
+
   for (let i = 0; i < total; i++) {
     const apple = document.createElement('button');
     apple.type = 'button';
     apple.className = 'apple-item';
     apple.textContent = '🍏';
+
     apple.addEventListener('click', () => {
       if (apple.disabled) return;
+
       apple.classList.add('picked');
       counted++;
-      document.getElementById('counted').textContent = counted;
-      setHelperText('Counted one more apple!');
+      document.getElementById('countedValue').textContent = counted;
       _playTone(520 + counted * 30, 120, 'sine');
+      setHelperText('Counted one more apple!');
+
+      const feedback = document.getElementById('countFeedback');
+      feedback.className = 'feedback success';
+      feedback.textContent = 'Great counting!';
+
       apple.disabled = true;
+
       if (counted === total) {
-        setTimeout(() => setHelperText('Great counting!'), 500);
+        const feedback = document.getElementById('countFeedback');
+        feedback.className = 'feedback success';
+        feedback.textContent = 'Excellent! You counted all the apples.';
+        setHelperText('Great counting! You finished!');
       }
     });
     row.appendChild(apple);
   }
 };
 
-// ----- COLOR MIXER & FLOATING & MAGNET (keep interactive + feedback) -----
+// ---------- COLOR MIXER ----------
 window.activities['color-mixer'] = function() {
   const content = document.getElementById('activityContent');
 
-  // challenge settings
   let round = 1;
   const maxRounds = 4;
   let score = 0;
-  let challengeMode = false;
-  let targetColor = null;
 
   function render() {
+    const targetColors = ['#b58cff', '#ffb86c', '#7fe7c1', '#6ec9ff', '#ffd166'];
+    const targetColor = targetColors[Math.floor(Math.random() * targetColors.length)];
+    const selected = [];
+
     content.innerHTML = `
-      <div class="color-mixer">
+      <div class="game-card">
         <h2>🎨 Color Mixer</h2>
-        <p id="mixPrompt">Tap colors to mix. Try making the target color in Challenge mode.</p>
-        <div class="mix-row" id="palette">
+        <p>Mix colors to match the target color.</p>
+        <div class="challenge-box">
+          <div class="target-swatch" style="background:${targetColor};"></div>
+          <div>Match this color</div>
+        </div>
+        <div class="mix-row">
           <button class="mix-color red" type="button" data-color="#ff5d8f">Red</button>
           <button class="mix-color yellow" type="button" data-color="#ffd166">Yellow</button>
           <button class="mix-color blue" type="button" data-color="#5ec8ff">Blue</button>
           <button class="mix-color green" type="button" data-color="#70e089">Green</button>
           <button class="mix-color purple" type="button" data-color="#b58cff">Purple</button>
         </div>
-        <div style="margin-top:12px">
-          <button class="mini-btn" id="mixBtn">Mix</button>
-          <button class="mini-btn" id="clearBtn">Clear</button>
-          <button class="mini-btn" id="startChallenge">Start Challenge</button>
+        <div style="margin-top:12px;">
+          <button class="mini-btn" id="mixBtn" type="button">Mix</button>
+          <button class="mini-btn" id="clearBtn" type="button">Clear</button>
         </div>
-        <div id="mixResult" class="mix-result" style="margin-top:14px">Mix colors here!</div>
-        <div id="challengeBox" style="margin-top:12px"></div>
-        <div style="margin-top:8px">Score: <span id="mixScore">${score}</span></div>
+        <div id="mixResult" class="mix-result">Mix colors here!</div>
+        <div id="mixFeedback" class="feedback"></div>
+        <div class="score-badge" style="margin-top:12px;">Score: <span id="mixScore">${score}</span></div>
       </div>
     `;
 
-    const selected = [];
-
-    document.querySelectorAll('#palette .mix-color').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const c = btn.dataset.color;
-        // toggle selection
-        if (selected.includes(c)) {
-          const i = selected.indexOf(c); selected.splice(i,1);
-          btn.classList.remove('picked');
+    document.querySelectorAll('.mix-color').forEach((button) => {
+      button.addEventListener('click', () => {
+        if (button.classList.contains('picked')) {
+          button.classList.remove('picked');
+          const index = selected.indexOf(button.dataset.color);
+          if (index >= 0) selected.splice(index, 1);
         } else {
-          selected.push(c);
-          btn.classList.add('picked');
+          selected.push(button.dataset.color);
+          button.classList.add('picked');
         }
-        setHelperText(selected.length ? `Selected ${selected.length} color(s)` : 'Choose colors to mix');
       });
     });
 
     document.getElementById('mixBtn').addEventListener('click', () => {
-      if (selected.length === 0) return setHelperText('Select at least one color');
-      const mixed = mixColors(selected);
-      const res = document.getElementById('mixResult');
-      res.style.background = mixed;
-      res.textContent = `Result: ${mixed.toUpperCase()}`;
-      _playTone(720, 140, 'sine');
-
-      if (challengeMode && targetColor) {
-        const dist = colorDistanceHex(mixed, targetColor);
-        if (dist < 100) {
-          // success
-          score += 15;
-          document.getElementById('mixScore').textContent = score;
-          setHelperText('Great match! +15');
-          _playTone(980, 240, 'sine');
-          round++;
-          if (round > maxRounds) showMixResults();
-          else setTimeout(() => startRound(), 900);
-        } else {
-          setHelperText('Not quite — try tweaking the mix');
-          _playTone(240, 160, 'sawtooth');
-        }
+      if (selected.length === 0) {
+        const feedback = document.getElementById('mixFeedback');
+        feedback.className = 'feedback error';
+        feedback.textContent = 'Pick at least one color first.';
+        return;
       }
-    });
 
-    document.getElementById('clearBtn').addEventListener('click', () => {
-      selected.length = 0;
-      document.querySelectorAll('#palette .mix-color').forEach(b => b.classList.remove('picked'));
-      const res = document.getElementById('mixResult');
-      res.style.background = '';
-      res.textContent = 'Mix colors here!';
-      setHelperText('Cleared');
-    });
+      const mixed = _mixHexColors(selected);
+      const result = document.getElementById('mixResult');
+      result.style.background = mixed;
+      result.textContent = `Result: ${mixed.toUpperCase()}`;
 
-    document.getElementById('startChallenge').addEventListener('click', () => {
-      challengeMode = true;
-      round = 1; score = 0; document.getElementById('mixScore').textContent = score;
-      startRound();
-    });
-  }
-
-  function startRound() {
-    // pick a random target from friendly set
-    const targets = ['#b58cff', '#ffb86c', '#7fe7c1', '#6ec9ff', '#ffd166'];
-    targetColor = targets[Math.floor(Math.random()*targets.length)];
-    const box = document.getElementById('challengeBox');
-    box.innerHTML = `<div style="display:flex;align-items:center;gap:10px">Target: <div style="width:48px;height:32px;border-radius:8px;background:${targetColor}"></div> Round ${round} /  ${4}</div>`;
-    setHelperText('Make the target color by mixing colors');
-  }
-
-  function showMixResults() {
-    const box = document.getElementById('challengeBox');
-    box.innerHTML = `<div style="text-align:center"><h3>Well done!</h3><p>Your score: ${score}</p><div style="margin-top:10px"><button class='cta-button' id='mixAgain'>Play Again</button></div></div>`;
-    document.getElementById('mixAgain').addEventListener('click', () => { round=1; score=0; render(); });
-    challengeMode = false;
-  }
-
-  // helpers: mix hex array into averaged hex
-  function mixColors(hexList) {
-    const rgbs = hexList.map(h => hexToRgb(h));
-    const sum = rgbs.reduce((acc, v) => ({ r: acc.r+v.r, g: acc.g+v.g, b: acc.b+v.b }), {r:0,g:0,b:0});
-    const n = rgbs.length;
-    const avg = { r: Math.round(sum.r/n), g: Math.round(sum.g/n), b: Math.round(sum.b/n) };
-    return rgbToHex(avg.r, avg.g, avg.b);
-  }
-
-  function hexToRgb(hex) {
-    hex = hex.replace('#','');
-    const bigint = parseInt(hex,16);
-    return { r: (bigint>>16)&255, g: (bigint>>8)&255, b: bigint&255 };
-  }
-
-  function rgbToHex(r,g,b){
-    return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
-  }
-
-  function colorDistanceHex(a,b) {
-    const ra = hexToRgb(a); const rb = hexToRgb(b);
-    const dr = ra.r-rb.r, dg=ra.g-rb.g, db=ra.b-rb.b;
-    return Math.sqrt(dr*dr+dg*dg+db*db);
-  }
-
-  render();
-};
-
-window.activities['floating-test'] = function() {
-  const content = document.getElementById('activityContent');
-  content.innerHTML = `
-    <div class="floating-game">
-      <h2>⛵ Floating & Sinking</h2>
-      <p>Tap the objects to explore what floats and what sinks.</p>
-      <div class="float-row" id="floatRow"></div>
-    </div>
-  `;
-  const items = ['🪙','💧','🪵','⚙️'];
-  const row = document.getElementById('floatRow');
-  row.innerHTML = '';
-  items.forEach((it, idx) => {
-    const b = document.createElement('button');
-    b.className = 'float-item';
-    b.type = 'button';
-    b.textContent = it;
-    b.addEventListener('click', () => {
-      b.classList.add('float-selected');
-      _playTone(420 + idx * 40, 120, 'triangle');
-      setTimeout(() => b.classList.remove('float-selected'), 300);
-      setHelperText('Nice thinking!');
-    });
-    row.appendChild(b);
-  });
-};
-
-window.activities['magnet-game'] = function() {
-  const content = document.getElementById('activityContent');
-  content.innerHTML = `
-    <div class="magnet-game-container">
-      <h2>🧲 Magnet Explorer</h2>
-      <p>Tap an object - does it stick to the magnet?</p>
-      <div class="magnet-area" id="magnetArea"></div>
-      <div id="magnetResult" style="margin-top:10px;font-weight:700;text-align:center"></div>
-    </div>
-  `;
-  const area = document.getElementById('magnetArea');
-  area.innerHTML = '';
-  const items = [
-    { id: 'coin', label: '🪙 Coin', mag: true },
-    { id: 'water', label: '💧 Water', mag: false },
-    { id: 'nail', label: '⚙️ Nail', mag: true },
-    { id: 'wood', label: '🪵 Wood', mag: false },
-    { id: 'plastic', label: '🎀 Plastic', mag: false },
-    { id: 'glass', label: '🔷 Glass', mag: false }
-  ];
-  items.forEach(it => {
-    const d = document.createElement('div');
-    d.className = 'magnet-item';
-    d.textContent = it.label;
-    d.style.cursor = 'pointer';
-    d.addEventListener('click', () => {
-      const res = document.getElementById('magnetResult');
-      if (it.mag) {
-        res.textContent = '✨ Magnetic! It sticks to the magnet!';
-        res.style.color = 'var(--success)';
-        _playTone(900, 200, 'sine');
-      } else {
-        res.textContent = '❌ Not magnetic! It does not stick.';
-        res.style.color = 'var(--danger)';
-        _playTone(240, 160, 'sawtooth');
-      }
-    });
-    area.appendChild(d);
-  });
-};
+      const distance = _colorDistanceHex(mixed, targetColor);
+      if (distance < 90) {
+        score += 15;
+        document.getElementById('mixScore').textContent = score;
+        const feedback = document.getElementById('mixFeedback');
+        feedback.className = 'feedback success';
+        feedback.textContent = 'Great match! You mixed the right color!';
+        _playTone(880, 2
