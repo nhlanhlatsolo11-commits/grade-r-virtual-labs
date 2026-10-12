@@ -320,28 +320,138 @@ window.activities['counting-game'] = function() {
 // ----- COLOR MIXER & FLOATING & MAGNET (keep interactive + feedback) -----
 window.activities['color-mixer'] = function() {
   const content = document.getElementById('activityContent');
-  content.innerHTML = `
-    <div class="color-mixer">
-      <h2>🎨 Color Mixer</h2>
-      <p>Tap colors to mix a new shade</p>
-      <div class="mix-row">
-        <button class="mix-color red" type="button" data-color="#ff5d8f">Red</button>
-        <button class="mix-color yellow" type="button" data-color="#ffd166">Yellow</button>
-        <button class="mix-color blue" type="button" data-color="#5ec8ff">Blue</button>
+
+  // challenge settings
+  let round = 1;
+  const maxRounds = 4;
+  let score = 0;
+  let challengeMode = false;
+  let targetColor = null;
+
+  function render() {
+    content.innerHTML = `
+      <div class="color-mixer">
+        <h2>🎨 Color Mixer</h2>
+        <p id="mixPrompt">Tap colors to mix. Try making the target color in Challenge mode.</p>
+        <div class="mix-row" id="palette">
+          <button class="mix-color red" type="button" data-color="#ff5d8f">Red</button>
+          <button class="mix-color yellow" type="button" data-color="#ffd166">Yellow</button>
+          <button class="mix-color blue" type="button" data-color="#5ec8ff">Blue</button>
+          <button class="mix-color green" type="button" data-color="#70e089">Green</button>
+          <button class="mix-color purple" type="button" data-color="#b58cff">Purple</button>
+        </div>
+        <div style="margin-top:12px">
+          <button class="mini-btn" id="mixBtn">Mix</button>
+          <button class="mini-btn" id="clearBtn">Clear</button>
+          <button class="mini-btn" id="startChallenge">Start Challenge</button>
+        </div>
+        <div id="mixResult" class="mix-result" style="margin-top:14px">Mix colors here!</div>
+        <div id="challengeBox" style="margin-top:12px"></div>
+        <div style="margin-top:8px">Score: <span id="mixScore">${score}</span></div>
       </div>
-      <div id="mixResult" class="mix-result">Mix colors here!</div>
-    </div>
-  `;
-  const result = document.getElementById('mixResult');
-  document.querySelectorAll('.mix-color').forEach(button => {
-    button.addEventListener('click', () => {
-      const color = button.dataset.color;
-      result.style.background = color;
-      result.textContent = 'Beautiful color!';
-      setHelperText('You made a new color!');
-      _playTone(720, 120, 'sine');
+    `;
+
+    const selected = [];
+
+    document.querySelectorAll('#palette .mix-color').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const c = btn.dataset.color;
+        // toggle selection
+        if (selected.includes(c)) {
+          const i = selected.indexOf(c); selected.splice(i,1);
+          btn.classList.remove('picked');
+        } else {
+          selected.push(c);
+          btn.classList.add('picked');
+        }
+        setHelperText(selected.length ? `Selected ${selected.length} color(s)` : 'Choose colors to mix');
+      });
     });
-  });
+
+    document.getElementById('mixBtn').addEventListener('click', () => {
+      if (selected.length === 0) return setHelperText('Select at least one color');
+      const mixed = mixColors(selected);
+      const res = document.getElementById('mixResult');
+      res.style.background = mixed;
+      res.textContent = `Result: ${mixed.toUpperCase()}`;
+      _playTone(720, 140, 'sine');
+
+      if (challengeMode && targetColor) {
+        const dist = colorDistanceHex(mixed, targetColor);
+        if (dist < 100) {
+          // success
+          score += 15;
+          document.getElementById('mixScore').textContent = score;
+          setHelperText('Great match! +15');
+          _playTone(980, 240, 'sine');
+          round++;
+          if (round > maxRounds) showMixResults();
+          else setTimeout(() => startRound(), 900);
+        } else {
+          setHelperText('Not quite — try tweaking the mix');
+          _playTone(240, 160, 'sawtooth');
+        }
+      }
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      selected.length = 0;
+      document.querySelectorAll('#palette .mix-color').forEach(b => b.classList.remove('picked'));
+      const res = document.getElementById('mixResult');
+      res.style.background = '';
+      res.textContent = 'Mix colors here!';
+      setHelperText('Cleared');
+    });
+
+    document.getElementById('startChallenge').addEventListener('click', () => {
+      challengeMode = true;
+      round = 1; score = 0; document.getElementById('mixScore').textContent = score;
+      startRound();
+    });
+  }
+
+  function startRound() {
+    // pick a random target from friendly set
+    const targets = ['#b58cff', '#ffb86c', '#7fe7c1', '#6ec9ff', '#ffd166'];
+    targetColor = targets[Math.floor(Math.random()*targets.length)];
+    const box = document.getElementById('challengeBox');
+    box.innerHTML = `<div style="display:flex;align-items:center;gap:10px">Target: <div style="width:48px;height:32px;border-radius:8px;background:${targetColor}"></div> Round ${round} /  ${4}</div>`;
+    setHelperText('Make the target color by mixing colors');
+  }
+
+  function showMixResults() {
+    const box = document.getElementById('challengeBox');
+    box.innerHTML = `<div style="text-align:center"><h3>Well done!</h3><p>Your score: ${score}</p><div style="margin-top:10px"><button class='cta-button' id='mixAgain'>Play Again</button></div></div>`;
+    document.getElementById('mixAgain').addEventListener('click', () => { round=1; score=0; render(); });
+    challengeMode = false;
+  }
+
+  // helpers: mix hex array into averaged hex
+  function mixColors(hexList) {
+    const rgbs = hexList.map(h => hexToRgb(h));
+    const sum = rgbs.reduce((acc, v) => ({ r: acc.r+v.r, g: acc.g+v.g, b: acc.b+v.b }), {r:0,g:0,b:0});
+    const n = rgbs.length;
+    const avg = { r: Math.round(sum.r/n), g: Math.round(sum.g/n), b: Math.round(sum.b/n) };
+    return rgbToHex(avg.r, avg.g, avg.b);
+  }
+
+  function hexToRgb(hex) {
+    hex = hex.replace('#','');
+    const bigint = parseInt(hex,16);
+    return { r: (bigint>>16)&255, g: (bigint>>8)&255, b: bigint&255 };
+  }
+
+  function rgbToHex(r,g,b){
+    return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+  }
+
+  function colorDistanceHex(a,b) {
+    const ra = hexToRgb(a); const rb = hexToRgb(b);
+    const dr = ra.r-rb.r, dg=ra.g-rb.g, db=ra.b-rb.b;
+    return Math.sqrt(dr*dr+dg*dg+db*db);
+  }
+
+  render();
 };
 
 window.activities['floating-test'] = function() {
